@@ -1,0 +1,26 @@
+------------ 06/04 ------------
+
+Fermionic hamiltonian: 
+    - the c's refer to basis functions.
+    - The SB and TB integrals are defined solely by basis choice.
+
+Mapping:
+    - The mapping requires bonds which scale very bad.
+    - The last c_j maps to 2**(systemsize) bonds.
+    - The optimization requires 1e5 samples per iteration.
+
+Lattice:
+    - The size of the lattice = # of modes =? # of basis functions?
+    - They have 20 "spin orbitals" for STO-3G, but we would get 10 lattice sites.
+    - Has this something to do with restricted/unrestricted? We would think not.
+
+Matrix elements:
+    - There is a trick for matrix elements, to get only contributions with sigma_i and sigma_z.
+    - All of our matrix elements involve sigma_z tho, thus... Yeah
+
+Goals:
+    - Be happy
+    - STO-3G as starting basis set - maybe improve to 6-31g when everything works.
+    - Initial goal; calculation of the ground state energy @ equilibrium distance for H2 or N2
+    - End goal: dissociation curves
+    - Extra: try RNN? Other basis sets, other molecules...
