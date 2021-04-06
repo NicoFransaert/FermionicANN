@@ -5,13 +5,21 @@ import time
 import json
 
 import utility as ut
+import TrainingRBM
 
 def run_FRBM(systemData, alpha=2, learningrate=0.05, optimizer='adamax', sr='Sr', numsamples=1000, numsteps=200, seed=123):
 
     # Unpack relevant data
     systemSize = systemData['totalBasisSize']
+    
+    # Call function from TrainingRBM.py
 
 
+
+    return 0
+
+
+def run_FRNN():
 
     return 0
 

@@ -24,3 +24,6 @@ Goals:
     - Initial goal; calculation of the ground state energy @ equilibrium distance for H2 or N2
     - End goal: dissociation curves
     - Extra: try RNN? Other basis sets, other molecules...
+
+
+Methaan in RNN als end goal
