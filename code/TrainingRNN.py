@@ -4,7 +4,6 @@ import numpy as np
 import json
 import os
 import time
-import random
 
 import torch
 import torch.backends.cudnn as cudnn
@@ -23,16 +22,14 @@ print(device)
 # num_units stands for the dimension d_h of the hidden states h_n (which get concatenated with one-hot visible units)
 # num_layers is the 'height' (# RNN cells) at every visible unit
 # See literature/Hibat_RecurrentNNWF.pdf Figure 1!
-def run_RNN(N = 10, J2=0, CT='', sector=0, num_units = 50, num_layers = 2, learningrate = 2.5e-4, lrschedule='O', numsamples = 500, numsteps = 1000, Jmax=4, seed = 123):
+def run_RNN(N = 10, num_units = 50, num_layers = 2, learningrate = 2.5e-4, lrschedule='O', numsamples = 500, numsteps = 1000, seed = 123):
 	
-	# Because of the insane noise, I'll try a second learning rate schedule (lrs)
 	# At the moment, 'C' (constant), 'H' (Hibat) and 'O' (Original) are available
 	lrs = lrschedule
 
 	# seed engines
-	random.seed(seed)
 	np.random.seed(seed)
-	nk.utils.RandomEngine(seed=seed) # netket random engine
+    nk.legacy.random.seed(seed=seed)
 	torch.manual_seed(seed)
 
 	# path, filename & outfile for logging E_mean, E_var & wf.

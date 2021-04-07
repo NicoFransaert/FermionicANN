@@ -5,21 +5,23 @@ import time
 import json
 
 import utility as ut
-import TrainingRBM
+import TrainingRBM as rbm
+import TrainingRNN as rnn
 
-def run_FRBM(systemData, alpha=2, learningrate=0.05, optimizer='adamax', sr='Sr', numsamples=1000, numsteps=200, seed=123):
 
-    # Unpack relevant data
-    systemSize = systemData['totalBasisSize']
-    
+def run_FRBM(systemData, alpha=2, learningrate=0.01, optimizer='sgd', numsamples=1000, numsteps=5000, seed=123):
+
     # Call function from TrainingRBM.py
-
+    rbm.run_RBM(systemData=systemData, outfile='', alpha=alpha, lr=learningrate, opt=optimizer, samples=numsamples, steps=numsteps, seed=seed)
 
 
     return 0
 
 
 def run_FRNN():
+
+    # Call function from TrainingRBM.py
+
 
     return 0
 
@@ -30,5 +32,7 @@ def run_FRNN():
 
 
 if __name__ == '__main__':
-    systemData = ut.make_dict(atom='N', basis='STO-3G', systemType='diatomic')
-    run_FRBM(systemData=systemData)
+    # systemData = ut.make_dict(atom='N', basis='STO-3G', systemType='diatomic')
+    # run_FRBM(systemData=systemData)
+
+    # integralData = 
