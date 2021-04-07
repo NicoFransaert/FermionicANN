@@ -29,7 +29,7 @@ def run_RNN(N = 10, num_units = 50, num_layers = 2, learningrate = 2.5e-4, lrsch
 
 	# seed engines
 	np.random.seed(seed)
-    nk.legacy.random.seed(seed=seed)
+	nk.legacy.random.seed(seed=seed)
 	torch.manual_seed(seed)
 
 	# path, filename & outfile for logging E_mean, E_var & wf.
