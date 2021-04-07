@@ -25,8 +25,8 @@ def run_RBM(systemData={}, outfile='', alpha=2, lr=0.01, opt='adam', samples=100
     outfile = 'testH2'
 
     #H2
-    OB = np.load('../data/integrals/STO-3G/STO-3G_H2_OB_d0-734_eq1.npy')
-    TB = np.load('../data/integrals/STO-3G/STO-3G_H2_TB_d0-734_eq1.npy')   
+    OB = np.load('../data/integrals/STO-3G/STO-3G_H2_OB_d0-7339_eq1.npy')
+    TB = np.load('../data/integrals/STO-3G/STO-3G_H2_TB_d0-7339_eq1.npy')   
 
     ########
     FerOp = FermionicOperator(OB, TB)
