@@ -148,7 +148,7 @@ class RNNwavefunction():
             inputs_ampl = inputs
 
         self.samples = samples
-        print(samples)
+        # print(np.array(samples))
         # print([list(samples[i]).count(0)==self.n_electrons/2 for i in range(len(samples))])
         return self.samples
 
