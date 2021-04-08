@@ -12,6 +12,7 @@ import torch.backends.cudnn as cudnn
 # Own imports
 from ComplexRNNwavefunction import RNNwavefunction
 import utility as ut
+from JW_hamiltonian import JW_H
 
 # Cuda settings
 cudnn.benchmark = True
