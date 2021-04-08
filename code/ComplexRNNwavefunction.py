@@ -97,17 +97,11 @@ class RNNwavefunction():
         # This means that either "0" or "1" can be obtained for the very first visible unit
         zero_row = torch.zeros(numsamples,1, device = device)
         one_row = torch.ones(numsamples,1, device = device)
-
-        if self.inputdim > 2:
-            rest_zeros = torch.zeros(numsamples, self.inputdim-2, device = device) 
-            inputs = torch.cat((one_row, zero_row, rest_zeros), dim=1)
-        else:
-            inputs = torch.cat((one_row, zero_row), dim=1)
+        inputs = torch.cat((one_row, zero_row), dim=1)
 
         inputs_ampl = inputs
         # print('inputs_ampl: ', inputs)
 
-        
         # For all visible units, make them 0 or 1. Take care of total # zeros == n_electrons/2
         for n in range(self.N):
             # print('samples: ', samples)
@@ -123,27 +117,20 @@ class RNNwavefunction():
             # We need to mask the probabilities which lead to samples where #zeros =/ 0.5*#electrons
             # in this case, next angular momentum can only go down when current angular momentum is equal to number of sites until end of chain is reached: adjust the mask appropriately
             # See Carasquilla Recurrent Neural Network Wave Functions, appendix
-
             output_mask = np.ones((self.numsamples, self.inputdim))
-            # if n >= self.N/2:
-            # if n >= self.N-(self.n_electrons/2):
-            # print(samples[:, :n])
+
             n_down = [list(samples[:, :n][i]).count(0) for i in range(len(samples[:, :n]))]
             n_up = [list(samples[:, :n][i]).count(1) for i in range(len(samples[:, :n]))]
             # print('n_down: ', n_down)
             # print('n_up: ', n_up)
             # print('sum: ', np.array(n_down)+np.array(n_up))
 
-            # helper_down = [(self.N/2) for i in range(self.numsamples)]
-            # helper_up = [(self.N/2) for i in range(self.numsamples)]
-            helper_down = [(self.N-self.n_electrons/2) for i in range(self.numsamples)]
-            helper_up = [(self.n_electrons/2) for i in range(self.numsamples)]
+            helper_down = [(self.N-self.n_electrons/2)]*self.numsamples
+            helper_up = [(self.n_electrons/2)]*self.numsamples
             # print('helper_down: ', helper_down)
 
             output_mask[:, 0] = np.array(helper_down) - np.array(n_down) > 0
             output_mask[:, 1] = np.array(helper_up) - np.array(n_up) > 0
-            # output_mask[:, 0] = np.array(helper_down) - np.array(n_down) > 0
-            # output_mask[:, 1] = np.array(helper_up) - np.array(n_up) > 0
             # print('output_mask :', output_mask)
 
             output_ampl = output_ampl * torch.from_numpy(output_mask)
@@ -230,27 +217,7 @@ class RNNwavefunction():
             # print('output_mask :', output_mask)
 
             output_ampl = output_ampl * torch.from_numpy(output_mask)
-
-
-            # zero_row = torch.zeros(self.numsamples,1, device = device)
-            # expanded_inputs_ampl = torch.cat((zero_row,inputs_ampl,zero_row), dim=1) #pad inputs_ampl with zeros
-            # input_ampl_up = torch.roll(expanded_inputs_ampl,1,dims=1)
-            # input_ampl_down = torch.roll(expanded_inputs_ampl,-1,dims=1)
-
-            # #output_mask has zeros where value of next angular momentum is impossible, one otherwise
-            # output_mask = torch.zeros_like(expanded_inputs_ampl)
-            # output_mask = torch.max(input_ampl_down, input_ampl_up)
-
-            # #undo the padding with zeros
-            # output_mask = output_mask[:,1:-1]
-
-            # #in this case, next angular momentum can only go down when current angular momentum is equal to number of sites until end of chain is reached: adjust the mask appropriately
-            # if self.N - n < self.inputdim:
-            #     output_mask_mask = torch.cat( (torch.ones(self.numsamples, self.N - n, device = device), torch.zeros(self.numsamples, self.inputdim - (self.N - n), device=device)), dim=1)
-            #     output_mask = output_mask*output_mask_mask
-
-            # #use mask to only leave valid probabilities for next state
-            # output_ampl = output_ampl*output_mask
+            
             output_ampl = torch.nn.functional.normalize(output_ampl, eps = 1e-30)
 
             # store amplitude and phase of marginal probability amplitude

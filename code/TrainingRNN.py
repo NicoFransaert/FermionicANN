@@ -75,8 +75,6 @@ def run_RNN(N = 10, num_units = 50, num_layers = 2, learningrate = 2.5e-4, lrsch
 	optimizer = torch.optim.Adam(params, lr=learningrate)
 	scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=adjust_lr)
 
-	# CHECK WHICH HAVE TO BE COMPLEX
-	# Why 5*N?
 	sigmas = torch.zeros((5*N*numsamples,N), dtype=torch.int64) # Array to store all the diagonal and non diagonal sigmas for all the samples (We create it here for memory efficiency as we do not want to allocate it at each training step)
 	H = torch.zeros(5*N*numsamples, dtype=torch.float32) # Array to store all the diagonal and non diagonal matrix elements for all the samples (We create it here for memory efficiency as we do not want to allocate it at each training step)
 	sigmaH = torch.zeros((5*N,N), dtype=torch.int32) # Array to store all the diagonal and non diagonal sigmas for each sample sigma
@@ -84,9 +82,6 @@ def run_RNN(N = 10, num_units = 50, num_layers = 2, learningrate = 2.5e-4, lrsch
 
 	amplitudes = torch.zeros(5*N*numsamples, 2, dtype=torch.float32, device=device) # Array to store all the diagonal and non diagonal log_probabilities for all the samples (We create it here for memory efficiency as we do not want to allocate it at each training step)
 	local_energies = torch.zeros(numsamples, 2, dtype=torch.float32, device=device) # The type complex should be specified, otherwise the imaginary part will be discarded
-
-	# meanEnergy=[]
-	# varEnergy=[]
 
 	# initialise dictionary for logging energie and varE
 	dictionary = {"Output": dict()}
@@ -244,13 +239,6 @@ def J1J2MatrixElements(ha, sigmap, sigmaH, matrixelements, n_electrons):
 	Returns: num, float which indicate the number of diagonal and non-diagonal configurations after applying the Hamiltonian on sigmap
 	"""
 
-	# get all connected matrix elements from netket hamiltonian
-	# print(sigmap)
-	# mel, connectors, newconfs = ha.get_conn(sigmap)
-	# print('mel: ', mel)
-	# print('connectors: ', connectors)
-	# print('newconfs: ', newconfs)
-
 	conn_states, matrix_elements = ha.get_conn(sigmap)
 
 	k=0
@@ -259,6 +247,8 @@ def J1J2MatrixElements(ha, sigmap, sigmaH, matrixelements, n_electrons):
 			matrixelements[k] = matrix_elements[i].real
 			sigmaH[k] = torch.from_numpy(conn_states[i])
 			k += 1
+
+	num = k
 
 	# print('sigmap: ', sigmap)
 	# print('connected states: ', conn_states)
@@ -270,14 +260,6 @@ def J1J2MatrixElements(ha, sigmap, sigmaH, matrixelements, n_electrons):
 
 	# num = len(mel) # Number of basis elements
 	# num = len(matrix_elements)
-	num = k
-	# construct connected states as full configuration from output of netket
-	# for i in range(len(mel)):
-	# 	sig = np.copy(sigmap)
-	# 	for j in range(len(connectors[i])):
-	# 		sig[connectors[i][j]] = newconfs[i][j]
-	# 	matrixelements[i] = mel[i].real 	# Be careful with only taking the real component. For AFH with only nn interactions this is ok.
-	# 	sigmaH[i] = torch.from_numpy(sig)
 
 	return num
 
