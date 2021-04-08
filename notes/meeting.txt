@@ -27,3 +27,22 @@ Goals:
 
 
 Methaan in RNN als end goal
+
+
+
+----------- 08/04------------
+
+Considerations:
+    - Setting a fixed number of electrons means constraining the Hilbert space (manually).
+    - In practice, this is done by sampling in the subspace of X electrons.
+    - We think X is the total number of electrons in the system divided by two.
+    - This can be checked by assuming #lattice sites = #basis functions AND #electrons/2 = #(up spins on lattice)
+    - Nuclear repulsion must be added manually, no problem
+
+
+What have we done (tried):
+    - We mapped the fermionic Hamiltonian to Pauli strings by Qiskit Aqua FermionicOperator
+    - We tried 4 versions of netket to be able to construct an RBM with Pauli strings, yet constrain the Hilbert space to X electrons.
+    - The RNN is modified to run for qubits and constrain to given number of up spins
+    - We initially tried down spins, but prof. Haegeman's lecture notes seem flawed. -> up spins equal filled ""orbitals""
+    

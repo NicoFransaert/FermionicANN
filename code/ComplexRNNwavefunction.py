@@ -45,7 +45,7 @@ class multiLayerRNN(torch.nn.Module):
 
 
 class RNNwavefunction():
-    def __init__(self, systemsize, inputdim = 2, hidden_size = 10, num_layers = 2 , seed=111):
+    def __init__(self, systemsize, inputdim = 2, n_electrons=2, hidden_size = 10, num_layers = 2 , seed=111):
         """
             systemsize:  int, size of the lattice
             cell:        a tensorflow RNN cell
@@ -53,6 +53,7 @@ class RNNwavefunction():
                          number of units per RNN layer
         """
         self.N = systemsize #Number of sites of the 1D chain
+        self.n_electrons = n_electrons
         self.hidden_size = hidden_size
         self.num_layers = num_layers
         self.inputdim = inputdim
@@ -75,7 +76,7 @@ class RNNwavefunction():
     def sample(self,numsamples):
         """
             Generate samples from a probability distribution parametrized by a recurrent network
-            We also impose zero total angular momentum (SU(2) symmetry)
+            We also impose the total number of electrons to be n_electrons/2
             ------------------------------------------------------------------------
             Parameters:
             numsamples:      int
@@ -88,77 +89,69 @@ class RNNwavefunction():
         self.numsamples = numsamples
 
         rnn_state = torch.zeros(self.num_layers, self.numsamples, self.hidden_size, dtype = torch.float32, device = device) #store all hidden states
-        # samples = torch.zeros(self.numsamples, self.N, device = device, dtype = torch.int64)  #store all samples
-        # # Set all samples to 0 -> 1 
-        # samples[:,1]=1
+
+        # Initialise all samples as 0 -> 0 -> ... -> 0
+        samples = torch.ones(self.numsamples, self.N, device = device, dtype = torch.int64)
         
-        # # For a fusion tree, all samples start with j_0=0 and j_1=1 (by construction).  Make appropriate input tensor:
-        # zero_row = torch.zeros(numsamples,1, device = device)
-        # one_row = torch.ones(numsamples,1, device = device)
-        # rest_zeros = torch.zeros(numsamples,self.inputdim-2, device = device) 
-        # inputs = torch.cat((zero_row, one_row, rest_zeros), dim=1)
-
-        # inputs_ampl = inputs
-        # # Now every sample has as input the one hot (0,1,...,d_v) meaning L=1 state. Based on this, the next visible (X) will be generated: 0 -> 1 -> X
-
-        '''
-        I have the feeling that the above reasoning leads to the wrong result.
-        Namely, the samples need to not start with 0 -> 1 -> X, where X is the first 'real' dof.
-        Rather, we need to start with X -> Y -> Z -> ... -> 0, where X can be either 0 or 2
-        
-        Otherwise, we miss the states 2 -> Y -> ... -> 0 completely, and therefore cannot reach the GS
-
-        Thus, we need to initialise with value "1" (which is just the first spin coupled to itself) and then use the loop below.
-        Afterwards, we discard the initial "1" (we really never put it into the samples).
-
-        This looks as follows
-         '''
-         # Initialise all samples as 0 -> 0 -> ... -> 0
-        samples = torch.zeros(self.numsamples, self.N, device = device, dtype = torch.int64)
-        
-        # Make one hot encoded "1" for all samples, such that the very first sample gets calculated from this "1"
-        # This means that either "0" or "2" can be obtained for the very first visible unit
+        # Make one hot encoded "0" for all samples, such that the very first sample gets calculated from this "0"
+        # This means that either "0" or "1" can be obtained for the very first visible unit
         zero_row = torch.zeros(numsamples,1, device = device)
         one_row = torch.ones(numsamples,1, device = device)
-        rest_zeros = torch.zeros(numsamples, self.inputdim-2, device = device) 
-        inputs = torch.cat((zero_row, one_row, rest_zeros), dim=1)
+
+        if self.inputdim > 2:
+            rest_zeros = torch.zeros(numsamples, self.inputdim-2, device = device) 
+            inputs = torch.cat((one_row, zero_row, rest_zeros), dim=1)
+        else:
+            inputs = torch.cat((one_row, zero_row), dim=1)
 
         inputs_ampl = inputs
+        # print('inputs_ampl: ', inputs)
 
         
-        # Now, we need to START AT 0 instead of 2
+        # For all visible units, make them 0 or 1. Take care of total # zeros == n_electrons/2
         for n in range(self.N):
+            # print('samples: ', samples)
 
-            if (n%5000==0 and n>0): print("sampler is at: {} samples".format(n))
+            # if (n%5000==0 and n>0): print("sampler is at: {} samples".format(n))
 
             rnn_output, rnn_state = self.rnn(inputs_ampl, rnn_state)
 
             #Applying softmax layer
             output_ampl = self.dense_ampl(rnn_output)
+            # print('output_ampl: ', output_ampl)
 
-            zero_row = torch.zeros(numsamples,1, device = device)
-            expanded_inputs_ampl = torch.cat((zero_row,inputs_ampl,zero_row), dim=1) #pad inputs_ampl with zeros
-            input_ampl_up = torch.roll(expanded_inputs_ampl,1,dims=1)
-            input_ampl_down = torch.roll(expanded_inputs_ampl,-1,dims=1)
+            # We need to mask the probabilities which lead to samples where #zeros =/ 0.5*#electrons
+            # in this case, next angular momentum can only go down when current angular momentum is equal to number of sites until end of chain is reached: adjust the mask appropriately
+            # See Carasquilla Recurrent Neural Network Wave Functions, appendix
 
-            #output_mask has zeros where value of next angular momentum is impossible, one otherwise
-            output_mask = torch.zeros_like(expanded_inputs_ampl)
-            output_mask = torch.max(input_ampl_down, input_ampl_up) # Place ones at the place left and right to last one-hot L
+            output_mask = np.ones((self.numsamples, self.inputdim))
+            # if n >= self.N/2:
+            # if n >= self.N-(self.n_electrons/2):
+            # print(samples[:, :n])
+            n_down = [list(samples[:, :n][i]).count(0) for i in range(len(samples[:, :n]))]
+            n_up = [list(samples[:, :n][i]).count(1) for i in range(len(samples[:, :n]))]
+            # print('n_down: ', n_down)
+            # print('n_up: ', n_up)
+            # print('sum: ', np.array(n_down)+np.array(n_up))
 
-            #undo the padding with zeros
-            output_mask = output_mask[:,1:-1]
+            # helper_down = [(self.N/2) for i in range(self.numsamples)]
+            # helper_up = [(self.N/2) for i in range(self.numsamples)]
+            helper_down = [(self.N-self.n_electrons/2) for i in range(self.numsamples)]
+            helper_up = [(self.n_electrons/2) for i in range(self.numsamples)]
+            # print('helper_down: ', helper_down)
 
-            #in this case, next angular momentum can only go down when current angular momentum is equal to number of sites until end of chain is reached: adjust the mask appropriately
-            if self.N - n < self.inputdim:
-                output_mask_mask = torch.cat( (torch.ones(numsamples, self.N - n, device = device), torch.zeros(numsamples, self.inputdim - (self.N - n), device=device)), dim=1)
-                output_mask = output_mask*output_mask_mask
+            output_mask[:, 0] = np.array(helper_down) - np.array(n_down) > 0
+            output_mask[:, 1] = np.array(helper_up) - np.array(n_up) > 0
+            # output_mask[:, 0] = np.array(helper_down) - np.array(n_down) > 0
+            # output_mask[:, 1] = np.array(helper_up) - np.array(n_up) > 0
+            # print('output_mask :', output_mask)
+
+            output_ampl = output_ampl * torch.from_numpy(output_mask)
+            # print('masked output_ampl :', output_ampl)
             
-            #use mask to only leave valid probabilities for next state
-            output_ampl = output_ampl*output_mask
-            output_ampl = torch.nn.functional.normalize(output_ampl, eps = 1e-30)
 
+            output_ampl = torch.nn.functional.normalize(output_ampl, eps = 1e-30)
             #sample from probabilities
-            #we only sample one instance, therefore replacement argument is irrelevant
             sample_temp = torch.multinomial(output_ampl**2, 1)[:,0]
             #store new samples
             samples[:,n] = sample_temp
@@ -168,7 +161,8 @@ class RNNwavefunction():
             inputs_ampl = inputs
 
         self.samples = samples
-        # print(samples[:,0])
+        # print(samples)
+        # print([list(samples[i]).count(0)==self.n_electrons/2 for i in range(len(samples))])
         return self.samples
 
 
@@ -185,16 +179,15 @@ class RNNwavefunction():
             log-amps      torch tensor of shape (number of samples,2)
                              the amplitude and phase of each sample
             """
+
+        # print('in amplitude')
+
         self.outputdim = self.inputdim
         self.numsamples = samples.shape[0]
 
-        # For a fusion tree, all samples start with j_0=0 and j_1=1 (by construction).  Make appropriate input tensor:
-        # The above is not true. Samples can also start with j_0=2
-        # The thing is that the initial j_start=1 is still the case. From this j_start, j_0 is calculated as either 0 or 2.
         zero_row = torch.zeros(self.numsamples,1, device = device)
         one_row = torch.ones(self.numsamples,1, device = device)
-        rest_zeros = torch.zeros(self.numsamples,self.inputdim-2, device = device)
-        inputs = torch.cat((zero_row, one_row, rest_zeros), dim=1)
+        inputs = torch.cat((zero_row, one_row), dim=1)
 
         rnn_state = torch.zeros(self.num_layers, self.numsamples, self.hidden_size, dtype = torch.float32, device = device)
 
@@ -214,26 +207,50 @@ class RNNwavefunction():
             output_ampl = self.dense_ampl(rnn_output)
             output_phase = self.dense_phase(rnn_output)
 
+            output_mask = np.ones((self.numsamples, self.inputdim))
+            # if n >= self.N/2:
+            # if n >= self.N-(self.n_electrons/2):
+            # print(samples[:, :n])
+            n_down = [list(samples[:, :n][i]).count(0) for i in range(len(samples[:, :n]))]
+            n_up = [list(samples[:, :n][i]).count(1) for i in range(len(samples[:, :n]))]
+            # print('n_down: ', n_down)
+            # print('n_up: ', n_up)
+            # print('sum: ', np.array(n_down)+np.array(n_up))
 
-            zero_row = torch.zeros(self.numsamples,1, device = device)
-            expanded_inputs_ampl = torch.cat((zero_row,inputs_ampl,zero_row), dim=1) #pad inputs_ampl with zeros
-            input_ampl_up = torch.roll(expanded_inputs_ampl,1,dims=1)
-            input_ampl_down = torch.roll(expanded_inputs_ampl,-1,dims=1)
+            # helper_down = [(self.N/2) for i in range(self.numsamples)]
+            # helper_up = [(self.N/2) for i in range(self.numsamples)]
+            helper_down = [(self.N-self.n_electrons/2) for i in range(self.numsamples)]
+            helper_up = [(self.n_electrons/2) for i in range(self.numsamples)]
+            # print('helper_down: ', helper_down)
 
-            #output_mask has zeros where value of next angular momentum is impossible, one otherwise
-            output_mask = torch.zeros_like(expanded_inputs_ampl)
-            output_mask = torch.max(input_ampl_down, input_ampl_up)
+            output_mask[:, 0] = np.array(helper_down) - np.array(n_down) > 0
+            output_mask[:, 1] = np.array(helper_up) - np.array(n_up) > 0
+            # output_mask[:, 0] = np.array(helper_down) - np.array(n_down) > 0
+            # output_mask[:, 1] = np.array(helper_up) - np.array(n_up) > 0
+            # print('output_mask :', output_mask)
 
-            #undo the padding with zeros
-            output_mask = output_mask[:,1:-1]
+            output_ampl = output_ampl * torch.from_numpy(output_mask)
 
-            #in this case, next angular momentum can only go down when current angular momentum is equal to number of sites until end of chain is reached: adjust the mask appropriately
-            if self.N - n < self.inputdim:
-                output_mask_mask = torch.cat( (torch.ones(self.numsamples, self.N - n, device = device), torch.zeros(self.numsamples, self.inputdim - (self.N - n), device=device)), dim=1)
-                output_mask = output_mask*output_mask_mask
 
-            #use mask to only leave valid probabilities for next state
-            output_ampl = output_ampl*output_mask
+            # zero_row = torch.zeros(self.numsamples,1, device = device)
+            # expanded_inputs_ampl = torch.cat((zero_row,inputs_ampl,zero_row), dim=1) #pad inputs_ampl with zeros
+            # input_ampl_up = torch.roll(expanded_inputs_ampl,1,dims=1)
+            # input_ampl_down = torch.roll(expanded_inputs_ampl,-1,dims=1)
+
+            # #output_mask has zeros where value of next angular momentum is impossible, one otherwise
+            # output_mask = torch.zeros_like(expanded_inputs_ampl)
+            # output_mask = torch.max(input_ampl_down, input_ampl_up)
+
+            # #undo the padding with zeros
+            # output_mask = output_mask[:,1:-1]
+
+            # #in this case, next angular momentum can only go down when current angular momentum is equal to number of sites until end of chain is reached: adjust the mask appropriately
+            # if self.N - n < self.inputdim:
+            #     output_mask_mask = torch.cat( (torch.ones(self.numsamples, self.N - n, device = device), torch.zeros(self.numsamples, self.inputdim - (self.N - n), device=device)), dim=1)
+            #     output_mask = output_mask*output_mask_mask
+
+            # #use mask to only leave valid probabilities for next state
+            # output_ampl = output_ampl*output_mask
             output_ampl = torch.nn.functional.normalize(output_ampl, eps = 1e-30)
 
             # store amplitude and phase of marginal probability amplitude
