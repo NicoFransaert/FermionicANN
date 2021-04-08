@@ -1,6 +1,4 @@
 import numpy as np
-import shutil
-import os
 
 sto3g_H2 = []
 bondlength = np.load('../data/dissociation/STO-3G/bondlength_H2.npy')
