@@ -91,7 +91,7 @@ class RNNwavefunction():
         rnn_state = torch.zeros(self.num_layers, self.numsamples, self.hidden_size, dtype = torch.float32, device = device) #store all hidden states
 
         # Initialise all samples as 0 -> 0 -> ... -> 0
-        samples = torch.ones(self.numsamples, self.N, device = device, dtype = torch.int64)
+        samples = torch.zeros(self.numsamples, self.N, device = device, dtype = torch.int64)
         
         # Make one hot encoded "0" for all samples, such that the very first sample gets calculated from this "0"
         # This means that either "0" or "1" can be obtained for the very first visible unit
@@ -117,7 +117,7 @@ class RNNwavefunction():
             # We need to mask the probabilities which lead to samples where #zeros =/ 0.5*#electrons
             # in this case, next angular momentum can only go down when current angular momentum is equal to number of sites until end of chain is reached: adjust the mask appropriately
             # See Carasquilla Recurrent Neural Network Wave Functions, appendix
-            output_mask = np.ones((self.numsamples, self.inputdim))
+            output_mask = np.zeros((self.numsamples, self.inputdim))
 
             n_down = [list(samples[:, :n][i]).count(0) for i in range(len(samples[:, :n]))]
             n_up = [list(samples[:, :n][i]).count(1) for i in range(len(samples[:, :n]))]
@@ -125,8 +125,8 @@ class RNNwavefunction():
             # print('n_up: ', n_up)
             # print('sum: ', np.array(n_down)+np.array(n_up))
 
-            helper_down = [(self.N-self.n_electrons/2)]*self.numsamples
-            helper_up = [(self.n_electrons/2)]*self.numsamples
+            helper_down = [(self.N-self.n_electrons)]*self.numsamples
+            helper_up = [(self.n_electrons)]*self.numsamples
             # print('helper_down: ', helper_down)
 
             output_mask[:, 0] = np.array(helper_down) - np.array(n_down) > 0
@@ -148,7 +148,7 @@ class RNNwavefunction():
             inputs_ampl = inputs
 
         self.samples = samples
-        # print(samples)
+        print(samples)
         # print([list(samples[i]).count(0)==self.n_electrons/2 for i in range(len(samples))])
         return self.samples
 
@@ -206,8 +206,8 @@ class RNNwavefunction():
 
             # helper_down = [(self.N/2) for i in range(self.numsamples)]
             # helper_up = [(self.N/2) for i in range(self.numsamples)]
-            helper_down = [(self.N-self.n_electrons/2) for i in range(self.numsamples)]
-            helper_up = [(self.n_electrons/2) for i in range(self.numsamples)]
+            helper_down = [(self.N-self.n_electrons) for i in range(self.numsamples)]
+            helper_up = [(self.n_electrons) for i in range(self.numsamples)]
             # print('helper_down: ', helper_down)
 
             output_mask[:, 0] = np.array(helper_down) - np.array(n_down) > 0
@@ -217,7 +217,7 @@ class RNNwavefunction():
             # print('output_mask :', output_mask)
 
             output_ampl = output_ampl * torch.from_numpy(output_mask)
-            
+
             output_ampl = torch.nn.functional.normalize(output_ampl, eps = 1e-30)
 
             # store amplitude and phase of marginal probability amplitude

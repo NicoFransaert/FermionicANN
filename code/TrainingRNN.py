@@ -36,23 +36,22 @@ def run_RNN(N = 10, num_units = 50, num_layers = 2, learningrate = 2.5e-4, lrsch
 
 	# path, filename & outfile for logging E_mean, E_var & wf.
 	path = './../data/RNN_runs/rnn/'
-	filename = 'testLiH_4'
+	filename = 'testLiH'
 	outfile = path + filename
 
 	#LiH
-	OB = np.load('../data/integrals/STO-3G/STO-3G_LiH_OB_d1-548_eq1.npy')
-	TB = np.load('../data/integrals/STO-3G/STO-3G_LiH_TB_d1-548_eq1.npy')
-	N=6
+	N=12
 	n_electrons=4
+	ha = JW_H()
 
 	########
-	FerOp = FermionicOperator(OB, TB)
+	# FerOp = FermionicOperator(OB, TB)
 
-	mapping = FerOp.mapping('jordan_wigner')
-	weights = [w[0] for w in mapping.paulis]
-	operators = [w[1].to_label() for w in mapping.paulis]
+	# mapping = FerOp.mapping('jordan_wigner')
+	# weights = [w[0] for w in mapping.paulis]
+	# operators = [w[1].to_label() for w in mapping.paulis]
 
-	ha = nk.operator.PauliStrings(operators, weights)
+	# ha = nk.operator.PauliStrings(operators, weights)
 	hi = ha.hilbert
 
 	# this was wrong, since wf was initiated with systemsize N instead of N-1
@@ -244,17 +243,17 @@ def J1J2MatrixElements(ha, sigmap, sigmaH, matrixelements, n_electrons):
 
 	k=0
 	for i in range(len(matrix_elements)):
-		if list(conn_states[i]).count(1) == n_electrons/2:
+		if list(conn_states[i]).count(1) == n_electrons:
 			matrixelements[k] = matrix_elements[i].real
 			sigmaH[k] = torch.from_numpy(conn_states[i])
 			k += 1
 
 	num = k
 
-	# print('sigmap: ', sigmap)
-	# print('connected states: ', conn_states)
-	# print('sigmaH: ', sigmaH)
-	# print('k: ', k)
+	print('sigmap: ', sigmap)
+	print('connected states: ', conn_states)
+	print('sigmaH: ', sigmaH)
+	print('k: ', k)
 		# matrixelements[i] = matrix_elements[i].real
 		# sigmaH[i] = torch.from_numpy(conn_states[i])
 
@@ -299,4 +298,4 @@ def J1J2Slices(ham, sigmasp, sigmas, H, sigmaH, matrixelements, n_electrons):
 
 
 if __name__ == "__main__":
-	run_RNN(N = 10, num_units = 50, num_layers = 1, learningrate = 5e-3, lrschedule='C', numsamples = 2000, numsteps = 2000, seed = 123)
+	run_RNN(N = 10, num_units = 50, num_layers = 1, learningrate = 5e-3, lrschedule='C', numsamples = 5, numsteps = 2000, seed = 123)
