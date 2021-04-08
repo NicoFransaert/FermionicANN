@@ -1,5 +1,6 @@
 # Imports
 import netket as nk
+from qiskit.chemistry import FermionicOperator
 import numpy as np
 import json
 import os
@@ -23,7 +24,7 @@ print(device)
 # num_layers is the 'height' (# RNN cells) at every visible unit
 # See literature/Hibat_RecurrentNNWF.pdf Figure 1!
 def run_RNN(N = 10, num_units = 50, num_layers = 2, learningrate = 2.5e-4, lrschedule='O', numsamples = 500, numsteps = 1000, seed = 123):
-	
+
 	# At the moment, 'C' (constant), 'H' (Hibat) and 'O' (Original) are available
 	lrs = lrschedule
 
@@ -34,20 +35,27 @@ def run_RNN(N = 10, num_units = 50, num_layers = 2, learningrate = 2.5e-4, lrsch
 
 	# path, filename & outfile for logging E_mean, E_var & wf.
 	path = './../data/RNN_runs/rnn/'
-	filename = ut.make_filename(N=N, J2=J2, CT=CT, sec=sector, ma='rnn', lr=learningrate, lrs=lrschedule, ns=numsamples, Jmax=Jmax, nU=num_units, nL=num_layers)
+	filename = 'testLiH_4'
 	outfile = path + filename
 
-	# create array to store F symbols (using the Jmax+1 lowest angular momenta)
-	F = np.zeros((Jmax+1, Jmax+1, Jmax+1, Jmax+1, Jmax+1, Jmax+1))
-	F = F.ravel().tolist()
-	g = nk.graph.Hypercube(length=N, n_dim=1, pbc=False)
-	c = nk.coupling.Chain(graph=g, spin=1, sector=0, max_mom=Jmax, binary=False)
-	hi = nk.hilbert.CoupledHilbert(graph=g, coupling=c, local_states=[i for i in range(Jmax+1)])
-	bonds, strengths = ut.create_bonds(D=1, L=N, J1=4, J2=0, PBC=False)
-	ha = nk.operator.CoupledChain(hilbert=hi, coupling=c, bonds=bonds, couplings=strengths, Fsymbols=F)
+	#LiH
+	OB = np.load('../data/integrals/STO-3G/STO-3G_LiH_OB_d1-548_eq1.npy')
+	TB = np.load('../data/integrals/STO-3G/STO-3G_LiH_TB_d1-548_eq1.npy')
+	N=6
+	n_electrons=4
+
+	########
+	FerOp = FermionicOperator(OB, TB)
+
+	mapping = FerOp.mapping('jordan_wigner')
+	weights = [w[0] for w in mapping.paulis]
+	operators = [w[1].to_label() for w in mapping.paulis]
+
+	ha = nk.operator.PauliStrings(operators, weights)
+	hi = ha.hilbert
 
 	# this was wrong, since wf was initiated with systemsize N instead of N-1
-	wf = RNNwavefunction(N-1, inputdim=Jmax+1, hidden_size=num_units, num_layers=num_layers, seed=seed)
+	wf = RNNwavefunction(N, inputdim=2, n_electrons=n_electrons, hidden_size=num_units, num_layers=num_layers, seed=seed)
 	# wf = torch.load(outfile)
 	numparam = sum(p.numel() for p in wf.rnn.parameters() if p.requires_grad)
 	numparam += sum(p.numel() for p in wf.dense_ampl.parameters() if p.requires_grad)
@@ -69,9 +77,9 @@ def run_RNN(N = 10, num_units = 50, num_layers = 2, learningrate = 2.5e-4, lrsch
 
 	# CHECK WHICH HAVE TO BE COMPLEX
 	# Why 5*N?
-	sigmas = torch.zeros((5*N*numsamples,N-1), dtype=torch.int64) # Array to store all the diagonal and non diagonal sigmas for all the samples (We create it here for memory efficiency as we do not want to allocate it at each training step)
+	sigmas = torch.zeros((5*N*numsamples,N), dtype=torch.int64) # Array to store all the diagonal and non diagonal sigmas for all the samples (We create it here for memory efficiency as we do not want to allocate it at each training step)
 	H = torch.zeros(5*N*numsamples, dtype=torch.float32) # Array to store all the diagonal and non diagonal matrix elements for all the samples (We create it here for memory efficiency as we do not want to allocate it at each training step)
-	sigmaH = torch.zeros((5*N,N-1), dtype=torch.int32) # Array to store all the diagonal and non diagonal sigmas for each sample sigma
+	sigmaH = torch.zeros((5*N,N), dtype=torch.int32) # Array to store all the diagonal and non diagonal sigmas for each sample sigma
 	matrixelements = torch.zeros(5*N, dtype=torch.float32) # Array to store all the diagonal and non diagonal matrix elements for each sample sigma (the number of matrix elements is bounded by at most 2N)
 
 	amplitudes = torch.zeros(5*N*numsamples, 2, dtype=torch.float32, device=device) # Array to store all the diagonal and non diagonal log_probabilities for all the samples (We create it here for memory efficiency as we do not want to allocate it at each training step)
@@ -90,7 +98,7 @@ def run_RNN(N = 10, num_units = 50, num_layers = 2, learningrate = 2.5e-4, lrsch
 
 	for step in range(numsteps):
 
-		if step % 50 == 0 : print('optimization step ', step)
+		print('optimization step ', step)
 
 		optimizer.zero_grad()
 
@@ -101,7 +109,7 @@ def run_RNN(N = 10, num_units = 50, num_layers = 2, learningrate = 2.5e-4, lrsch
 
 		with torch.no_grad():
 
-			slices, len_sigmas = J1J2Slices(ha, samples.cpu().numpy(), sigmas, H, sigmaH, matrixelements)
+			slices, len_sigmas = J1J2Slices(ha, samples.cpu().numpy(), sigmas, H, sigmaH, matrixelements, n_electrons)
 
 			steps = len_sigmas//30000+1 # Process the sigmas in steps to avoid allocating too much memory
 
@@ -158,16 +166,16 @@ def run_RNN(N = 10, num_units = 50, num_layers = 2, learningrate = 2.5e-4, lrsch
 	eval_samples = int(1e5)
 	samples = wf.sample(eval_samples)
 
-	sigmas = torch.zeros((5*N*eval_samples,N-1), dtype=torch.int64) 
+	sigmas = torch.zeros((5*N*eval_samples,N), dtype=torch.int64) 
 	H = torch.zeros(5*N*eval_samples, dtype=torch.float32) 
-	sigmaH = torch.zeros((5*N,N-1), dtype=torch.int32)
+	sigmaH = torch.zeros((5*N,N), dtype=torch.int32)
 	matrixelements = torch.zeros(5*N, dtype=torch.float32) 
 	amplitudes = torch.zeros(5*N*eval_samples, 2, dtype=torch.float32, device=device)
 	local_energies = torch.zeros(eval_samples, 2, dtype=torch.float32, device=device)
 
 	with torch.no_grad():
 
-		slices, len_sigmas = J1J2Slices(ha, samples.cpu().numpy(), sigmas, H, sigmaH, matrixelements)
+		slices, len_sigmas = J1J2Slices(ha, samples.cpu().numpy(), sigmas, H, sigmaH, matrixelements, n_electrons)
 
 		steps = len_sigmas//30000+1 # Process the sigmas in steps to avoid allocating too much memory
 
@@ -215,7 +223,7 @@ def run_RNN(N = 10, num_units = 50, num_layers = 2, learningrate = 2.5e-4, lrsch
 	with open(outfile+'.META', 'w') as f:
 		json.dump({	"Time_optimization": end-start, 
 					"Time_sampling": {"Mean": np.mean(sample_times), "Variance": np.var(sample_times)},
-					"LocalSize": Jmax+1,
+					"LocalSize": 2,
 					"Seed": seed,
 					"Evaluation_samples": eval_samples,
 					"Evaluation_time": end_eval-start_eval,
@@ -223,7 +231,7 @@ def run_RNN(N = 10, num_units = 50, num_layers = 2, learningrate = 2.5e-4, lrsch
 
 
 
-def J1J2MatrixElements(ha, sigmap, sigmaH, matrixelements):
+def J1J2MatrixElements(ha, sigmap, sigmaH, matrixelements, n_electrons):
 	"""
 	-Computes the matrix element of the hamiltonian for a given configuration sigmap
 	-----------------------------------------------------------------------------------
@@ -238,26 +246,43 @@ def J1J2MatrixElements(ha, sigmap, sigmaH, matrixelements):
 
 	# get all connected matrix elements from netket hamiltonian
 	# print(sigmap)
-	mel, connectors, newconfs = ha.get_conn(sigmap)
+	# mel, connectors, newconfs = ha.get_conn(sigmap)
 	# print('mel: ', mel)
 	# print('connectors: ', connectors)
 	# print('newconfs: ', newconfs)
 
+	conn_states, matrix_elements = ha.get_conn(sigmap)
 
-	num = len(mel) # Number of basis elements
+	k=0
+	for i in range(len(matrix_elements)):
+		if list(conn_states[i]).count(1) == n_electrons/2:
+			matrixelements[k] = matrix_elements[i].real
+			sigmaH[k] = torch.from_numpy(conn_states[i])
+			k += 1
 
+	# print('sigmap: ', sigmap)
+	# print('connected states: ', conn_states)
+	# print('sigmaH: ', sigmaH)
+	# print('k: ', k)
+		# matrixelements[i] = matrix_elements[i].real
+		# sigmaH[i] = torch.from_numpy(conn_states[i])
+
+
+	# num = len(mel) # Number of basis elements
+	# num = len(matrix_elements)
+	num = k
 	# construct connected states as full configuration from output of netket
-	for i in range(len(mel)):
-		sig = np.copy(sigmap)
-		for j in range(len(connectors[i])):
-			sig[connectors[i][j]] = newconfs[i][j]
-		matrixelements[i] = mel[i].real 	# Be careful with only taking the real component. For AFH with only nn interactions this is ok.
-		sigmaH[i] = torch.from_numpy(sig)
+	# for i in range(len(mel)):
+	# 	sig = np.copy(sigmap)
+	# 	for j in range(len(connectors[i])):
+	# 		sig[connectors[i][j]] = newconfs[i][j]
+	# 	matrixelements[i] = mel[i].real 	# Be careful with only taking the real component. For AFH with only nn interactions this is ok.
+	# 	sigmaH[i] = torch.from_numpy(sig)
 
 	return num
 
 
-def J1J2Slices(ham, sigmasp, sigmas, H, sigmaH, matrixelements):
+def J1J2Slices(ham, sigmasp, sigmas, H, sigmaH, matrixelements, n_electrons):
 	"""
 	Returns: A tuple 
 					-The list of slices (that will help to slice the array sigmas)
@@ -278,7 +303,7 @@ def J1J2Slices(ham, sigmasp, sigmas, H, sigmaH, matrixelements):
 
 	for n in range(sigmasp.shape[0]):
 		sigmap = sigmasp[n,:]
-		num = J1J2MatrixElements(ham ,sigmap, sigmaH, matrixelements) #note that sigmas[0,:]==sigmap, matrixelements and sigmaH are updated
+		num = J1J2MatrixElements(ham ,sigmap, sigmaH, matrixelements, n_electrons) #note that sigmas[0,:]==sigmap, matrixelements and sigmaH are updated
 		slices.append(slice(sigmas_length,sigmas_length + num))
 		s = slices[n]
 
@@ -291,4 +316,4 @@ def J1J2Slices(ham, sigmasp, sigmas, H, sigmaH, matrixelements):
 
 
 if __name__ == "__main__":
-	run_RNN(N = 10, num_units = 50, num_layers = 1, learningrate = 5e-3, lrschedule='C', numsamples = 1000, numsteps = 2, Jmax=4, seed = 123)
+	run_RNN(N = 10, num_units = 50, num_layers = 1, learningrate = 5e-3, lrschedule='C', numsamples = 2000, numsteps = 2000, seed = 123)
