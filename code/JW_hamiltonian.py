@@ -4,7 +4,7 @@ from qiskit.chemistry import FermionicOperator
 
 def JW_H(systemData={'driver_string': 'Li 0.0 0.0 0.0; H 0.0 0.0 1.548', 'basis': 'sto3g'}):
                             
-    driver = PySCFDriver(   atom=systemData["driver_string"],
+    driver = PySCFDriver(   atom=systemData["atomstring"],
                             basis=systemData["basis"]       )
 
     mol = driver.run()
