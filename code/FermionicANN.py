@@ -10,10 +10,10 @@ import system_dicts
 # import TrainingRNN as rnn
 
 
-def run_FRBM(systemData={}, alpha=2, learningrate=0.01, optimizer='sgd', numsamples=1000, numsteps=5000, seed=123):
+def run_FRBM(systemData={}, outfile=None, alpha=2, lr=0.1, opt='sgd', samples=10000, use_sampler_init_trick=False, steps=200, seed=123):
 
     # Call function from TrainingRBM.py
-    rbm.run_RBM(systemData=systemData, outfile='', alpha=alpha, lr=learningrate, opt=optimizer, samples=numsamples, steps=numsteps, seed=seed)
+    rbm.run_RBM(systemData=systemData, outfile=outfile, alpha=alpha, lr=lr, opt=opt, samples=samples, steps=steps, seed=seed)
 
     return 0
 
@@ -41,6 +41,6 @@ if __name__ == '__main__':
     else: system = system_dicts.sto3g_H2[3] #eq config
 
     if args.machine == 'rbm':
-        run_FRBM(systemData=system)
+        run_FRBM(systemData=system, samples=100000)
     if args.machine == 'rnn':
         run_FRBM(systemData=system)
