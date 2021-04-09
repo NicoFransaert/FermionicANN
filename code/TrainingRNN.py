@@ -33,18 +33,19 @@ def run_RNN(N = 10, num_units = 50, num_layers = 2, learningrate = 2.5e-4, lrsch
 
 	# seed engines
 	np.random.seed(seed)
-	nk.legacy.random.seed(seed=seed)
+	# nk.legacy.random.seed(seed=seed)
 	torch.manual_seed(seed)
 
 	# path, filename & outfile for logging E_mean, E_var & wf.
 	path = './../data/RNN_runs/rnn/'
-	filename = 'testLiH'
+	filename = 'testH2'
 	outfile = path + filename
 
 	#LiH
-	N=12
-	n_electrons=4
-	ha = JW_H()
+	N=4
+	n_electrons=2
+	systemData={'driver_string': 'H 0.0 0.0 0.0; H 0.0 0.0 0.734', 'basis': 'sto3g'}
+	ha = JW_H(systemData=systemData)
 
 	########
 	# FerOp = FermionicOperator(OB, TB)
@@ -77,12 +78,12 @@ def run_RNN(N = 10, num_units = 50, num_layers = 2, learningrate = 2.5e-4, lrsch
 	optimizer = torch.optim.Adam(params, lr=learningrate)
 	scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=adjust_lr)
 
-	sigmas = torch.zeros((7*N*numsamples,N), dtype=torch.int64) # Array to store all the diagonal and non diagonal sigmas for all the samples (We create it here for memory efficiency as we do not want to allocate it at each training step)
-	H = torch.zeros(7*N*numsamples, dtype=torch.float32) # Array to store all the diagonal and non diagonal matrix elements for all the samples (We create it here for memory efficiency as we do not want to allocate it at each training step)
-	sigmaH = torch.zeros((7*N,N), dtype=torch.int32) # Array to store all the diagonal and non diagonal sigmas for each sample sigma
-	matrixelements = torch.zeros(7*N, dtype=torch.float32) # Array to store all the diagonal and non diagonal matrix elements for each sample sigma (the number of matrix elements is bounded by at most 2N)
+	sigmas = torch.zeros((5*N*numsamples,N), dtype=torch.int64) # Array to store all the diagonal and non diagonal sigmas for all the samples (We create it here for memory efficiency as we do not want to allocate it at each training step)
+	H = torch.zeros(5*N*numsamples, dtype=torch.float32) # Array to store all the diagonal and non diagonal matrix elements for all the samples (We create it here for memory efficiency as we do not want to allocate it at each training step)
+	sigmaH = torch.zeros((5*N,N), dtype=torch.int32) # Array to store all the diagonal and non diagonal sigmas for each sample sigma
+	matrixelements = torch.zeros(5*N, dtype=torch.float32) # Array to store all the diagonal and non diagonal matrix elements for each sample sigma (the number of matrix elements is bounded by at most 2N)
 
-	amplitudes = torch.zeros(7*N*numsamples, 2, dtype=torch.float32, device=device) # Array to store all the diagonal and non diagonal log_probabilities for all the samples (We create it here for memory efficiency as we do not want to allocate it at each training step)
+	amplitudes = torch.zeros(5*N*numsamples, 2, dtype=torch.float32, device=device) # Array to store all the diagonal and non diagonal log_probabilities for all the samples (We create it here for memory efficiency as we do not want to allocate it at each training step)
 	local_energies = torch.zeros(numsamples, 2, dtype=torch.float32, device=device) # The type complex should be specified, otherwise the imaginary part will be discarded
 
 	# initialise dictionary for logging energie and varE
@@ -103,18 +104,18 @@ def run_RNN(N = 10, num_units = 50, num_layers = 2, learningrate = 2.5e-4, lrsch
 		samples = wf.sample(numsamples)
 		end_time_sampling = time.time()
 		sample_times.append(end_time_sampling - start_time_sampling)
-		print('sampling of ', numsamples, ' samples took: ', sample_times[-1])
+		# print('sampling of ', numsamples, ' samples took: ', sample_times[-1])
 
-		start_time_Ecalculation = time.time()
+		# start_time_Ecalculation = time.time()
 		with torch.no_grad():
 
-			start_time_slicing = time.time()
+			# start_time_slicing = time.time()
 			slices, len_sigmas = J1J2Slices(ha, samples.cpu().numpy(), sigmas, H, sigmaH, matrixelements, n_electrons)
-			end_time_slicing = time.time()
-			print('slicing took: ', end_time_slicing-start_time_slicing)
+			# end_time_slicing = time.time()
+			# print('slicing took: ', end_time_slicing-start_time_slicing)
 
-			# steps = len_sigmas//30000+1 # Process the sigmas in steps to avoid allocating too much memory
-			steps = 1 # Process the sigmas in steps to avoid allocating too much memory
+			steps = len_sigmas//30000+1 # Process the sigmas in steps to avoid allocating too much memory
+			# steps = 1 # Process the sigmas in steps to avoid allocating too much memory
 
 			for i in range(steps):
 				if i < steps-1:
@@ -122,50 +123,53 @@ def run_RNN(N = 10, num_units = 50, num_layers = 2, learningrate = 2.5e-4, lrsch
 				else:
 					cut = slice((i*len_sigmas)//steps,len_sigmas)
 
-				start_time_amplitudeslice = time.time()
+				# start_time_amplitudeslice = time.time()
 				amplitudes[cut] = wf.amplitude(sigmas[cut].to(device))
-				end_time_amplitudeslice = time.time()
-				print('calculating slice amplitudes took: ', end_time_amplitudeslice-start_time_amplitudeslice)
+				# end_time_amplitudeslice = time.time()
+				# print('calculating amplitudes[cut] took (all sigmas, i.e. 1 slice=all): ', end_time_amplitudeslice-start_time_amplitudeslice)
 
-				start_time_test_amplitudes = time.time()
-				amplitudez = wf.amplitude(sigmas.to(device))
-				end_time_test_amplitudes = time.time()
-				print('calculating amplitudez took: ', end_time_test_amplitudes-start_time_test_amplitudes)
+				# start_time_test_amplitudes = time.time()
+				# amplitudez = wf.amplitude(sigmas.to(device))
+				# end_time_test_amplitudes = time.time()
+				# print('calculating amplitudez took: ', end_time_test_amplitudes-start_time_test_amplitudes)
 
-				print('amplitudes: ', amplitudes)
-				print('amplitudez: ', amplitudez)
+				# print('amplitudes: ', amplitudes)
+				# print('amplitudez: ', amplitudez)
 
 			#Generating the local energies
-			start_time_localE = time.time()
+			# start_time_localE = time.time()
 			for n in range(len(slices)):
 				s=slices[n]
 				local_energies[n,0] = torch.dot(H[s].to(device), (torch.mul(amplitudes[s][:,0]/amplitudes[s][0,0],torch.cos(amplitudes[s][:,1]-amplitudes[s][0,1])))) #real part
-				local_energies[n,1] = torch.dot(H[s].to(device), (torch.mul(amplitudes[s][:,0]/amplitudes[s][0,0],torch.sin(amplitudes[s][:,1]-amplitudes[s][0,1])))) #complex part
-			end_time_localE = time.time()
-			print('local energy calculation took: ', end_time_localE-start_time_localE)
+				# local_energies[n,1] = torch.dot(H[s].to(device), (torch.mul(amplitudes[s][:,0]/amplitudes[s][0,0],torch.sin(amplitudes[s][:,1]-amplitudes[s][0,1])))) #complex part
+			# end_time_localE = time.time()
+			# print('local energy calculation took: ', end_time_localE-start_time_localE)
 
-		end_time_Ecalculation = time.time()
-		print('calculation of local energies took: ', end_time_Ecalculation - start_time_Ecalculation)
+		# end_time_Ecalculation = time.time()
+		# print('calculation of local energies took: ', end_time_Ecalculation - start_time_Ecalculation)
 
-		start_time_amplitudes = time.time()
+		# start_time_amplitudes = time.time()
 		amplitudes_ = wf.amplitude(samples)
-		end_time_amplitudes = time.time()
-		print('calculating amplitudes took: ', end_time_amplitudes - start_time_amplitudes)
-		print('samples: ', samples)
-		print('sigmas: ', sigmas)	
+		# end_time_amplitudes = time.time()
+		# print('calculating amplitudes took: ', end_time_amplitudes - start_time_amplitudes)
+		# print('samples: ', samples)
+		# print('sigmas: ', sigmas)	
 
-		start_time_cost = time.time()
-		cost = 2 *  torch.mean(torch.log(amplitudes_[:,0]) * local_energies[:,0] + amplitudes_[:,1] * local_energies[:,1])
-		cost = cost - 2* torch.mean(torch.log(amplitudes_[:,0]))*torch.mean(local_energies[:,0]) - 2*torch.mean(amplitudes_[:,1])*torch.mean(local_energies[:,1])
-		end_time_cost = time.time()
-		print('calculating cost took: ', end_time_cost-start_time_cost)
+		# start_time_cost = time.time()
+		# print(local_energies[:, 1])
+		# cost = 2 *  torch.mean(torch.log(amplitudes_[:,0]) * local_energies[:,0] + amplitudes_[:,1] * local_energies[:,1])
+		# cost = cost - 2* torch.mean(torch.log(amplitudes_[:,0]))*torch.mean(local_energies[:,0]) - 2*torch.mean(amplitudes_[:,1])*torch.mean(local_energies[:,1])
+		cost = 2 *  torch.mean(torch.log(amplitudes_[:,0]) * local_energies[:,0])
+		cost = cost - 2* torch.mean(torch.log(amplitudes_[:,0]))*torch.mean(local_energies[:,0])
+		# end_time_cost = time.time()
+		# print('calculating cost took: ', end_time_cost-start_time_cost)
 
-		start_time_backward = time.time()
+		# start_time_backward = time.time()
 		cost.backward()
 		optimizer.step()
 		scheduler.step()
-		end_time_backward = time.time()
-		print('backward pass took: ', end_time_backward-start_time_backward)
+		# end_time_backward = time.time()
+		# print('backward pass took: ', end_time_backward-start_time_backward)
 
 		meanE = torch.mean(local_energies, dim=0)[0]
 		varE = torch.var((local_energies[:,0]))
@@ -199,12 +203,12 @@ def run_RNN(N = 10, num_units = 50, num_layers = 2, learningrate = 2.5e-4, lrsch
 	eval_samples = int(1e5)
 	samples = wf.sample(eval_samples)
 
-	sigmas = torch.zeros((7*N*eval_samples,N), dtype=torch.int64) 
-	H = torch.zeros(7*N*eval_samples, dtype=torch.float32) 
-	sigmaH = torch.zeros((7*N,N), dtype=torch.int32)
-	matrixelements = torch.zeros(7*N, dtype=torch.float32) 
+	sigmas = torch.zeros((5*N*eval_samples,N), dtype=torch.int64) 
+	H = torch.zeros(5*N*eval_samples, dtype=torch.float32) 
+	sigmaH = torch.zeros((5*N,N), dtype=torch.int32)
+	matrixelements = torch.zeros(5*N, dtype=torch.float32) 
 
-	amplitudes = torch.zeros(7*N*eval_samples, 2, dtype=torch.float32, device=device)
+	amplitudes = torch.zeros(5*N*eval_samples, 2, dtype=torch.float32, device=device)
 	local_energies = torch.zeros(eval_samples, 2, dtype=torch.float32, device=device)
 
 	with torch.no_grad():
@@ -264,7 +268,6 @@ def run_RNN(N = 10, num_units = 50, num_layers = 2, learningrate = 2.5e-4, lrsch
 					"Parameters_total": numparam}, f)
 
 
-
 def J1J2MatrixElements(ha, sigmap, sigmaH, matrixelements, n_electrons):
 	"""
 	-Computes the matrix element of the hamiltonian for a given configuration sigmap
@@ -280,15 +283,23 @@ def J1J2MatrixElements(ha, sigmap, sigmaH, matrixelements, n_electrons):
 
 	conn_states, matrix_elements = ha.get_conn(sigmap)
 
-	k=0
-	for i in range(len(matrix_elements)):
-		if list(conn_states[i]).count(1) == n_electrons:
+	# k=0
+	# for i in range(len(matrix_elements)):
+		# if list(conn_states[i]).count(1) == n_electrons:
 			# print('trying to access matrixelements @: ', k)
-			matrixelements[k] = matrix_elements[i].real
-			sigmaH[k] = torch.from_numpy(conn_states[i])
-			k += 1
+		# matrixelements[k] = matrix_elements[i].real
+		# sigmaH[k] = torch.from_numpy(conn_states[i])
+		# matrixelements[i] = matrix_elements[i].real
+		# sigmaH[i] = torch.from_numpy(conn_states[i])
+		# k += 1
 
-	num = k
+	# num = k
+
+	
+	# if J1J2MatrixElements.counter==False:
+	# 	print('number of connected states for a given sigmap: ', len(conn_states))
+	# 	print('number of connected states with #spin-up = #electrons (some of which double counted): ', num)
+	# 	J1J2MatrixElements.counter=True
 
 	# print('sigmap: ', sigmap)
 	# print('connected states: ', conn_states, '(there are', len(conn_states),')')
@@ -297,9 +308,10 @@ def J1J2MatrixElements(ha, sigmap, sigmaH, matrixelements, n_electrons):
 		# matrixelements[i] = matrix_elements[i].real
 		# sigmaH[i] = torch.from_numpy(conn_states[i])
 
-
+	matrixelements[:len(matrix_elements)] = torch.from_numpy(matrix_elements.real)
+	sigmaH[:len(conn_states)] = torch.from_numpy(conn_states)
 	# num = len(mel) # Number of basis elements
-	# num = len(matrix_elements)
+	num = len(matrix_elements)
 	# print('number of matrix elements: ', num)
 
 	return num
@@ -339,4 +351,5 @@ def J1J2Slices(ham, sigmasp, sigmas, H, sigmaH, matrixelements, n_electrons):
 
 
 if __name__ == "__main__":
-	run_RNN(N = 10, num_units = 50, num_layers = 1, learningrate = 5e-3, lrschedule='C', numsamples = 1000, numsteps = 1000, seed = 123)
+	# J1J2MatrixElements.counter=False
+	run_RNN(N = 10, num_units = 50, num_layers = 1, learningrate = 5e-3, lrschedule='C', numsamples = 100000, numsteps = 2000, seed = 123)
