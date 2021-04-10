@@ -2,9 +2,10 @@ import netket as nk
 from JW_hamiltonian import JW_H
 
 import numpy as np
+import json
 import time
 
-def run_RBM(systemData, alpha=2, lr=0.1, opt='sgd', samples=1000, use_sampler_init_trick=False, steps=200, seed=123):
+def run_RBM(systemData, alpha=2, lr=0.1, opt='sgd', numsamples=1000, use_sampler_init_trick=False, steps=200, seed=123):
 
     # make outfile
     path = './../data/RBM_runs/'
@@ -16,17 +17,17 @@ def run_RBM(systemData, alpha=2, lr=0.1, opt='sgd', samples=1000, use_sampler_in
     filename += 'a' + str(alpha) + '_'
     filename +=  opt + '_'
     filename += 'lr' + str(lr).split('.')[-1] + '_'
-    filename += 'ns' + str(samples)
+    filename += 'ns' + str(numsamples)
     outfile = path+filename
 
     print(' \n #### outfile is: ', outfile, ' #### \n')
 
-	# extract information from systemData
-	n_electrons= systemData['n_electrons']
+    # extract information from systemData
+    n_electrons= systemData['n_electrons']
 
-	# make hamiltonian operator
-	ha = JW_H(systemData=systemData)
-    
+    # make hamiltonian operator
+    ha = JW_H(systemData=systemData)
+
     g = nk.graph.Hypercube(n_dim=1, length=ha.hilbert.size, pbc=False)
     hi = nk.hilbert.Qubit(graph=g)
     assert(hi.size==ha.hilbert.size)
@@ -49,8 +50,8 @@ def run_RBM(systemData, alpha=2, lr=0.1, opt='sgd', samples=1000, use_sampler_in
             sa = nk.sampler.MetropolisExchange(machine=ma, n_chains=chain_length)
             for ss in sa.samples(1):
                 for s in ss:
-                     #print(s, list(s).count(1))
-                     n_up.append(int(list(s).count(1)))
+                        #print(s, list(s).count(1))
+                        n_up.append(int(list(s).count(1)))
             if n_up.count(systemData["n_electrons"]) == chain_length: print('found after %d tries' %(i)); break
         if i+1==tries:
             print('sampler init config not found, using MetropolisLocal')
@@ -71,7 +72,7 @@ def run_RBM(systemData, alpha=2, lr=0.1, opt='sgd', samples=1000, use_sampler_in
         hamiltonian=ha,
         sampler=sa,
         optimizer=op,
-        n_samples=samples,
+        n_samples=numsamples,
         diag_shift=0.1,
         use_iterative=True,
         method='Sr')
@@ -88,20 +89,17 @@ def run_RBM(systemData, alpha=2, lr=0.1, opt='sgd', samples=1000, use_sampler_in
 
 
     # Save all useful energy in one file
-    #### CHANGE THIS YANNICK
-	with open(outfile+'.META', 'w') as f:
-		json.dump({	"SystemData": systemData,
-					"Total_energy": {"Mean": systemData['nuc_rep_energy'] + float(meanE),
-									 "Sigma": float(sigmaE)},
-					"Energy_variance": {"Mean": float(varE), 
-										"Sigma": float(sigmavarE)}, 
-					"Time_optimization": end-start, 
-					"Steps": steps,
-					"Optimization_samples": numsamples,
-					"Time_sampling": {"Mean": np.mean(sample_times), "Variance": np.var(sample_times)},
-					"LocalSize": 2,
-					"Seed": seed,
-					"Parameters_total": ma.n_par		
-		}, f)
+    with open(outfile+'.META', 'w') as f:
+        json.dump({	"SystemData": systemData,
+                    "Total_energy": {"Mean": systemData['nuc_rep_energy'] + float(vmc.energy.mean.real),
+                                        "Sigma": float(vmc.energy.error_of_mean)},
+                    "Energy_variance": {"Mean": float(vmc.energy.variance)}, 
+                    "Time_optimization": end-start, 
+                    "Steps": steps,
+                    "Optimization_samples": numsamples,
+                    "LocalSize": 2,
+                    "Seed": seed,
+                    "Parameters_total": ma.n_par		
+        }, f)
 
     return 0
