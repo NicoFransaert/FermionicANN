@@ -18,10 +18,10 @@ def run_FRBM(systemData={}, outfile=None, alpha=2, lr=0.1, opt='sgd', samples=10
     return 0
 
 
-def run_FRNN():
+def run_FRNN(systemData, num_units = 50, num_layers = 1, learningrate = 5e-3, lrschedule='C', numsamples = 100000, numsteps = 2000, seed = 123):
 
     # Call function from TrainingRBM.py
-    rnn.run_RNN(systemData=systemData, N = 10, num_units = 50, num_layers = 1, learningrate = 5e-3, lrschedule='C', numsamples = 100000, numsteps = 2000, seed = 123)
+    rnn.run_RNN(systemData=systemData, num_units = 50, num_layers = 1, learningrate = 5e-3, lrschedule='C', numsamples = 100000, numsteps = 2000, seed = 123)
 
     return 0
 
@@ -43,4 +43,4 @@ if __name__ == '__main__':
     if args.machine == 'rbm':
         run_FRBM(systemData=system, samples=100000)
     if args.machine == 'rnn':
-        run_FRBM(systemData=system)
+        run_FRNN(systemData=system)

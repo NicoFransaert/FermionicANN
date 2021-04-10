@@ -20,24 +20,36 @@ use_cuda = torch.cuda.is_available()
 device = torch.device("cuda:0" if use_cuda else "cpu")
 print(device)
 
-np.set_printoptions(threshold=np.inf)
+# np.set_printoptions(threshold=np.inf)
 
 
 # num_units stands for the dimension d_h of the hidden states h_n (which get concatenated with one-hot visible units)
 # num_layers is the 'height' (# RNN cells) at every visible unit
 # See literature/Hibat_RecurrentNNWF.pdf Figure 1!
-def run_RNN(N = 10, num_units = 50, num_layers = 2, learningrate = 2.5e-4, lrschedule='O', numsamples = 500, numsteps = 1000, seed = 123):
+def run_RNN(systemData, num_units = 50, num_layers = 2, learningrate = 2.5e-4, lrschedule='O', numsamples = 500, numsteps = 1000, seed = 123):
 
-	#LiH
-	N=4
-	n_electrons=2
-	systemData={'atomstring': 'H 0.0 0.0 0.0; H 0.0 0.0 0.734', 'basis': 'sto3g'}
-	ha = JW_H(systemData=systemData)
-
-	# path, filename & outfile for logging E_mean, E_var & wf.
+	# make outfile
 	path = './../data/RNN_runs/rnn/'
-	filename = 'testH2'
-	outfile = path + filename
+	filename = 'rnn_'
+	filename += systemData['basis'] + '_'
+	filename += systemData['molecule'] + '_'
+	filename += str(systemData['distance']).replace('.', '-') + '_'
+	filename += 'eq' + str(int(systemData['eq'])) + '_'
+	filename += 'nU' + str(num_units) + '_'
+	filename += 'nL' + str(num_layers) + '_'
+	filename += 'lr' + str(learningrate).split('.')[-1] + '_'
+	filename += 'lrs' + str(lrschedule) + '_'
+	filename += 'ns' + str(numsamples)
+	outfile = path+filename
+
+	print('outfile is: ', outfile)
+
+	# extract information from systemData
+	N = systemData['n_basisfuncs']
+	n_electrons= systemData['n_electrons']
+
+	# make hamiltonian operator
+	ha = JW_H(systemData=systemData)
 
 	# seed engines
 	np.random.seed(seed)
