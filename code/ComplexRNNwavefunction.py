@@ -101,76 +101,38 @@ class RNNwavefunction():
         inputs = torch.cat((one_row, zero_row), dim=1)
 
         inputs_ampl = inputs
-        # print('inputs_ampl: ', inputs)
-        
+
         # Keeps track of number of up spins
         counter = np.zeros((numsamples))
 
-        # For all visible units, make them 0 or 1. Take care of total # zeros == n_electrons/2
+        # For all visible units, make them 0 or 1. Take care of total #ones == n_electrons
         for n in range(self.N):
-            # print('samples: ', samples)
-            # print('counter :', counter)
-
+  
             # if (n%5000==0 and n>0): print("sampler is at: {} samples".format(n))
-
             rnn_output, rnn_state = self.rnn(inputs_ampl, rnn_state)
 
             #Applying softmax layer
             output_ampl = self.dense_ampl(rnn_output)
-            # print('output_ampl: ', output_ampl)
 
-            # We need to mask the probabilities which lead to samples where #zeros =/ 0.5*#electrons
-            # in this case, next angular momentum can only go down when current angular momentum is equal to number of sites until end of chain is reached: adjust the mask appropriately
-            # See Carasquilla Recurrent Neural Network Wave Functions, appendix
-
+            # We need to mask the probabilities which lead to samples where #spin up =/ #electrons
             output_mask = np.zeros((self.numsamples, self.inputdim))
-            # print(samples)
-            # n_down = [list(samples[:, :n][i]).count(0) for i in range(len(samples[:, :n]))]
-            # n_up = [list(samples[:, :n][i]).count(1) for i in range(len(samples[:, :n]))]
-
-            # counters = [Counter(list(list(samples[:, :n])[i])) for i in range(len(samples))]
-            # print(counters)
-            # n_down = [int(counters[i][0]) for i in range(len(counters))]
-            # print('n_down: ', n_down)
-            # n_up = [int(counters[i][1]) for i in range(len(counters))]
-            # print('n_up: ', n_up)
-
             output_mask[:, 0] = self.N-self.n_electrons - (n-counter) > 0
             output_mask[:, 1] = self.n_electrons - counter > 0
-            # print('n_down :', n-counter)
-            # print('n_up :', counter)
-            # print('iteration :', n)
-            # print('n_down: ', n_down)
-            # print('n_up: ', n_up)
-            # print('sum: ', np.array(n_down)+np.array(n_up))
-
-            # helper_down = [(self.N-self.n_electrons)]*self.numsamples
-            # helper_up = [(self.n_electrons)]*self.numsamples
-            # print('helper_down: ', helper_down)
-
-            # output_mask[:, 0] = self.N-self.n_electrons - np.array(n_down) > 0
-            # output_mask[:, 1] = self.n_electrons - np.array(n_up) > 0
-            # print('output_mask :', output_mask)
-
             output_ampl = output_ampl * torch.from_numpy(output_mask)
-            # print('masked output_ampl :', output_ampl)
-            
-
             output_ampl = torch.nn.functional.normalize(output_ampl, eps = 1e-30)
+
             #sample from probabilities
             sample_temp = torch.multinomial(output_ampl**2, 1)[:,0]
+
             #store new samples
             samples[:,n] = sample_temp
-            # print(sample_temp)
             counter += np.array(sample_temp)
+
             #make the sampled degrees of freedom inputs for the next iteration
             inputs = torch.nn.functional.one_hot(sample_temp, num_classes = self.outputdim).float()
-
             inputs_ampl = inputs
 
         self.samples = samples
-        # print(np.array(samples))
-        # print([list(samples[i]).count(0)==self.n_electrons/2 for i in range(len(samples))])
         return self.samples
 
 
@@ -188,8 +150,6 @@ class RNNwavefunction():
                              the amplitude and phase of each sample
             """
 
-        # print('in amplitude')
-
         self.outputdim = self.inputdim
         self.numsamples = samples.shape[0]
 
@@ -198,12 +158,10 @@ class RNNwavefunction():
         inputs = torch.cat((zero_row, one_row), dim=1)
 
         rnn_state = torch.zeros(self.num_layers, self.numsamples, self.hidden_size, dtype = torch.float32, device = device)
-
         amplitudes = torch.zeros(self.numsamples, self.N, 2, device = device)  #2 dims for amplitude and phase
+        tot_ampl = torch.zeros(self.numsamples, 2, device=device, dtype=torch.float32)
 
         inputs_ampl = inputs
-
-        # The following is only available for torch versions 1.1.0 and greater (thus 1.0.X is not supported)
         one_hot_samples = torch.nn.functional.one_hot(samples, num_classes = self.inputdim).float()
 
         # Initialise counter that keeps track of # up spins
@@ -219,32 +177,8 @@ class RNNwavefunction():
             # output_phase = self.dense_phase(rnn_output)
 
             output_mask = np.zeros((self.numsamples, self.inputdim))
-            # if n >= self.N/2:
-            # if n >= self.N-(self.n_electrons/2):
-            # print(samples[:, :n])
-            # n_down = [list(samples[:, :n][i]).count(0) for i in range(len(samples[:, :n]))]
-            # n_up = [list(samples[:, :n][i]).count(1) for i in range(len(samples[:, :n]))]
-
-            # counters = [Counter(samples[i, :n]) for i in range(len(samples))]
-            # n_down = [int(counters[i][0]) for i in range(len(counters))]
-            # n_up = [int(counters[i][1]) for i in range(len(counters))]
-
-            # print('n_down: ', n_down)
-            # print('n_up: ', n_up)
-            # print('sum: ', np.array(n_down)+np.array(n_up))
-
-            # helper_down = [(self.N/2) for i in range(self.numsamples)]
-            # helper_up = [(self.N/2) for i in range(self.numsamples)]
-            # helper_down = [(self.N-self.n_electrons) for i in range(self.numsamples)]
-            # helper_up = [(self.n_electrons) for i in range(self.numsamples)]
-            # print('helper_down: ', helper_down)
-
             output_mask[:, 0] = self.N-self.n_electrons - (n-counter) > 0
             output_mask[:, 1] = self.n_electrons - counter > 0
-            # output_mask[:, 0] = np.array(helper_down) - np.array(n_down) > 0
-            # output_mask[:, 1] = np.array(helper_up) - np.array(n_up) > 0
-            # print('output_mask (in amplitudes function): ', output_mask)
-
             output_ampl = output_ampl * torch.from_numpy(output_mask)
 
             output_ampl = torch.nn.functional.normalize(output_ampl, eps = 1e-30)
@@ -259,10 +193,9 @@ class RNNwavefunction():
 
             inputs_ampl = inputs
 
-        tot_ampl = torch.zeros(self.numsamples, 2, device=device, dtype=torch.float32)
+
         tot_ampl[:, 0] = amplitudes[:,:,0].prod(dim = 1)
         # tot_ampl[:, 1] = amplitudes[:,:,1].sum(dim = 1)
-        # print('amplitude: ', tot_ampl[:,0])
-        # print('phase: ', tot_ampl[:,1])
+
         self.amplitudes = tot_ampl
         return self.amplitudes

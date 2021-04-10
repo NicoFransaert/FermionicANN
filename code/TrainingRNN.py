@@ -28,56 +28,46 @@ np.set_printoptions(threshold=np.inf)
 # See literature/Hibat_RecurrentNNWF.pdf Figure 1!
 def run_RNN(N = 10, num_units = 50, num_layers = 2, learningrate = 2.5e-4, lrschedule='O', numsamples = 500, numsteps = 1000, seed = 123):
 
-	# At the moment, 'C' (constant), 'H' (Hibat) and 'O' (Original) are available
-	lrs = lrschedule
-
-	# seed engines
-	np.random.seed(seed)
-	# nk.legacy.random.seed(seed=seed)
-	torch.manual_seed(seed)
+	#LiH
+	N=4
+	n_electrons=2
+	systemData={'atomstring': 'H 0.0 0.0 0.0; H 0.0 0.0 0.734', 'basis': 'sto3g'}
+	ha = JW_H(systemData=systemData)
 
 	# path, filename & outfile for logging E_mean, E_var & wf.
 	path = './../data/RNN_runs/rnn/'
 	filename = 'testH2'
 	outfile = path + filename
 
-	#LiH
-	N=4
-	n_electrons=2
-	systemData={'driver_string': 'H 0.0 0.0 0.0; H 0.0 0.0 0.734', 'basis': 'sto3g'}
-	ha = JW_H(systemData=systemData)
+	# seed engines
+	np.random.seed(seed)
+	torch.manual_seed(seed)
 
-	########
-	# FerOp = FermionicOperator(OB, TB)
 
-	# mapping = FerOp.mapping('jordan_wigner')
-	# weights = [w[0] for w in mapping.paulis]
-	# operators = [w[1].to_label() for w in mapping.paulis]
-
-	# ha = nk.operator.PauliStrings(operators, weights)
-	# hi = ha.hilbert
-
-	# this was wrong, since wf was initiated with systemsize N instead of N-1
+	# make RNN
 	wf = RNNwavefunction(N, inputdim=2, n_electrons=n_electrons, hidden_size=num_units, num_layers=num_layers, seed=seed)
-	# wf = torch.load(outfile)
 	numparam = sum(p.numel() for p in wf.rnn.parameters() if p.requires_grad)
 	numparam += sum(p.numel() for p in wf.dense_ampl.parameters() if p.requires_grad)
 	numparam += sum(p.numel() for p in wf.dense_phase.parameters() if p.requires_grad)
 	print('number of parameters: ', numparam)
 	wf.to_device(device)
-
+	# store params
 	params= list(wf.rnn.parameters()) + list(wf.dense_ampl.parameters()) + list(wf.dense_phase.parameters())
 	
-	if lrs == 'C':
+	# learning rate schedule. 'C' = constant, 'O' = Original based on Hibat paper.
+	if lrschedule == 'C':
 		adjust_lr = lambda epoch: 1  # Learning rate is constant
-	elif lrs == 'O':
-		adjust_lr = lambda epoch: 1./(1. + 0.1*(epoch*learningrate)) # Original lrs of RNN, which is equal to Hibat (lr = lr*adjust)
+	elif lrschedule == 'O':
+		adjust_lr = lambda epoch: 1./(1. + 0.1*(epoch*learningrate))
 	else:
 		NotImplementedError('Learning rate schedule not implemented')
 
+	# optimizer
 	optimizer = torch.optim.Adam(params, lr=learningrate)
 	scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=adjust_lr)
 
+
+	# initialise all matrices
 	sigmas = torch.zeros((5*N*numsamples,N), dtype=torch.int64) # Array to store all the diagonal and non diagonal sigmas for all the samples (We create it here for memory efficiency as we do not want to allocate it at each training step)
 	H = torch.zeros(5*N*numsamples, dtype=torch.float32) # Array to store all the diagonal and non diagonal matrix elements for all the samples (We create it here for memory efficiency as we do not want to allocate it at each training step)
 	sigmaH = torch.zeros((5*N,N), dtype=torch.int32) # Array to store all the diagonal and non diagonal sigmas for each sample sigma
@@ -89,6 +79,7 @@ def run_RNN(N = 10, num_units = 50, num_layers = 2, learningrate = 2.5e-4, lrsch
 	# initialise dictionary for logging energie and varE
 	dictionary = {"Output": dict()}
 	energy_dictList = []
+
 
 	# optimization
 	start = time.time()
@@ -128,15 +119,7 @@ def run_RNN(N = 10, num_units = 50, num_layers = 2, learningrate = 2.5e-4, lrsch
 				# end_time_amplitudeslice = time.time()
 				# print('calculating amplitudes[cut] took (all sigmas, i.e. 1 slice=all): ', end_time_amplitudeslice-start_time_amplitudeslice)
 
-				# start_time_test_amplitudes = time.time()
-				# amplitudez = wf.amplitude(sigmas.to(device))
-				# end_time_test_amplitudes = time.time()
-				# print('calculating amplitudez took: ', end_time_test_amplitudes-start_time_test_amplitudes)
-
-				# print('amplitudes: ', amplitudes)
-				# print('amplitudez: ', amplitudez)
-
-			#Generating the local energies
+			# generating the local energies
 			# start_time_localE = time.time()
 			for n in range(len(slices)):
 				s=slices[n]
@@ -152,11 +135,8 @@ def run_RNN(N = 10, num_units = 50, num_layers = 2, learningrate = 2.5e-4, lrsch
 		amplitudes_ = wf.amplitude(samples)
 		# end_time_amplitudes = time.time()
 		# print('calculating amplitudes took: ', end_time_amplitudes - start_time_amplitudes)
-		# print('samples: ', samples)
-		# print('sigmas: ', sigmas)	
 
 		# start_time_cost = time.time()
-		# print(local_energies[:, 1])
 		# cost = 2 *  torch.mean(torch.log(amplitudes_[:,0]) * local_energies[:,0] + amplitudes_[:,1] * local_energies[:,1])
 		# cost = cost - 2* torch.mean(torch.log(amplitudes_[:,0]))*torch.mean(local_energies[:,0]) - 2*torch.mean(amplitudes_[:,1])*torch.mean(local_energies[:,1])
 		cost = 2 *  torch.mean(torch.log(amplitudes_[:,0]) * local_energies[:,0])
@@ -173,11 +153,9 @@ def run_RNN(N = 10, num_units = 50, num_layers = 2, learningrate = 2.5e-4, lrsch
 
 		meanE = torch.mean(local_energies, dim=0)[0]
 		varE = torch.var((local_energies[:,0]))
-
 		print('mean energy: ', meanE)
 		print('variance: ', varE)
 		
-
 		step_dictionary = {
 		"Energy": { "Mean": float(meanE) },
 		"EnergyVariance": { "Mean": float(varE) },
@@ -230,7 +208,7 @@ def run_RNN(N = 10, num_units = 50, num_layers = 2, learningrate = 2.5e-4, lrsch
 		for n in range(len(slices)):
 			s=slices[n]
 			local_energies[n,0] = torch.dot(H[s].to(device), (torch.mul(amplitudes[s][:,0]/amplitudes[s][0,0],torch.cos(amplitudes[s][:,1]-amplitudes[s][0,1])))) #real part
-			local_energies[n,1] = torch.dot(H[s].to(device), (torch.mul(amplitudes[s][:,0]/amplitudes[s][0,0],torch.sin(amplitudes[s][:,1]-amplitudes[s][0,1])))) #complex part	
+			# local_energies[n,1] = torch.dot(H[s].to(device), (torch.mul(amplitudes[s][:,0]/amplitudes[s][0,0],torch.sin(amplitudes[s][:,1]-amplitudes[s][0,1])))) #complex part	
 
 
 		eval_meanE = torch.mean(local_energies, dim=0)[0]
@@ -283,36 +261,9 @@ def J1J2MatrixElements(ha, sigmap, sigmaH, matrixelements, n_electrons):
 
 	conn_states, matrix_elements = ha.get_conn(sigmap)
 
-	# k=0
-	# for i in range(len(matrix_elements)):
-		# if list(conn_states[i]).count(1) == n_electrons:
-			# print('trying to access matrixelements @: ', k)
-		# matrixelements[k] = matrix_elements[i].real
-		# sigmaH[k] = torch.from_numpy(conn_states[i])
-		# matrixelements[i] = matrix_elements[i].real
-		# sigmaH[i] = torch.from_numpy(conn_states[i])
-		# k += 1
-
-	# num = k
-
-	
-	# if J1J2MatrixElements.counter==False:
-	# 	print('number of connected states for a given sigmap: ', len(conn_states))
-	# 	print('number of connected states with #spin-up = #electrons (some of which double counted): ', num)
-	# 	J1J2MatrixElements.counter=True
-
-	# print('sigmap: ', sigmap)
-	# print('connected states: ', conn_states, '(there are', len(conn_states),')')
-	# print('sigmaH: ', sigmaH, '(there are', len(sigmaH),')')
-	# print('k: ', k)
-		# matrixelements[i] = matrix_elements[i].real
-		# sigmaH[i] = torch.from_numpy(conn_states[i])
-
 	matrixelements[:len(matrix_elements)] = torch.from_numpy(matrix_elements.real)
 	sigmaH[:len(conn_states)] = torch.from_numpy(conn_states)
-	# num = len(mel) # Number of basis elements
 	num = len(matrix_elements)
-	# print('number of matrix elements: ', num)
 
 	return num
 
@@ -351,5 +302,4 @@ def J1J2Slices(ham, sigmasp, sigmas, H, sigmaH, matrixelements, n_electrons):
 
 
 if __name__ == "__main__":
-	# J1J2MatrixElements.counter=False
-	run_RNN(N = 10, num_units = 50, num_layers = 1, learningrate = 5e-3, lrschedule='C', numsamples = 100000, numsteps = 2000, seed = 123)
+	run_RNN(N = 10, num_units = 50, num_layers = 1, learningrate = 5e-3, lrschedule='C', numsamples = 10000, numsteps = 5000, seed = 123)
