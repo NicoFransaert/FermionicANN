@@ -20,8 +20,8 @@ def run_FRBM(systemData={}, outfile=None, alpha=2, lr=0.1, opt='sgd', samples=10
 
 def run_FRNN():
 
-    # Call function from TrainingRBM.py
-    rnn.run_RNN(systemData=systemData, N = 10, num_units = 50, num_layers = 1, learningrate = 5e-3, lrschedule='C', numsamples = 100000, numsteps = 2000, seed = 123)
+    # Call function from TrainingRNN.py
+    rnn.run_RNN(systemData={}, N = 10, num_units = 50, num_layers = 1, learningrate = 5e-3, lrschedule='C', numsamples = 100000, numsteps = 2000, seed = 123)
 
     return 0
 
@@ -32,8 +32,8 @@ def run_FRNN():
 if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser(description='Run optimization for 1 systemData')
-    parser.add_argument('-index', type=int)
-    parser.add_argument('-machine', type=str)
+    parser.add_argument('-index', default=0, type=int)
+    parser.add_argument('-machine', default='rbm', type=str)
     args = parser.parse_args()
 
     # example for dissociation curve H2
