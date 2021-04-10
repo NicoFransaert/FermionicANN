@@ -1,18 +1,15 @@
 import netket as nk
 import numpy as np
-import os
-import time
-import json
 
 import TrainingRBM as rbm
 import TrainingRNN as rnn
 from system_dicts import *
 
 
-def run_FRBM(systemData={}, alpha=2, lr=0.1, opt='sgd', samples=10000, use_sampler_init_trick=False, steps=200, seed=123):
+def run_FRBM(systemData={}, alpha=2, lr=0.1, opt='sgd', numsamples=10000, use_sampler_init_trick=False, steps=200, seed=123):
 
     # Call function from TrainingRBM.py
-    rbm.run_RBM(systemData=systemData, alpha=alpha, lr=lr, opt=opt, samples=samples, use_sampler_init_trick=use_sampler_init_trick, steps=steps, seed=seed)
+    rbm.run_RBM(systemData=systemData, alpha=alpha, lr=lr, opt=opt, numsamples=numsamples, use_sampler_init_trick=use_sampler_init_trick, steps=steps, seed=seed)
 
     print('Simulation done!')
 
@@ -40,7 +37,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     # example for dissociation curve H2 (-index 3 is eq)
-    if args.index: system = sto3g_H2[args.index]
+    #if args.index: system = sto3g_H2[args.index]
 
     # num_units & num_layers -> expressivity of ANN
     # num_units [50 - 100] are customary || num_layers [1-4] are customariy (but incredibly slow, exponential scaling in numparam)
@@ -49,9 +46,9 @@ if __name__ == '__main__':
     # For the custom values (below) 1000 steps are sufficient
     # Of course, numsteps depends heavily on used learningrate, lrschedule, RNN size,...
     
-    # system = sto3g_CH4_eq
+    system = sto3g_H2_eq
 
     if args.machine == 'rbm':
-        run_FRBM(systemData=system, samples=10000)
+        run_FRBM(systemData=system, alpha=2, lr=0.1, opt='sgd', numsamples=10000, use_sampler_init_trick=False, steps=200)
     if args.machine == 'rnn':
         run_FRNN(systemData=system, num_units = 50, num_layers = 1, learningrate = 5e-3, lrschedule='C', numsamples = 100000, numsteps = 1000, seed = 123)

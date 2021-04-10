@@ -1,5 +1,6 @@
 .vscode/
 .gitignore
-RBM_test_29.ipynb
+data/RBM_runs
+data/RNN_runs
 notebooks/__pycache__
 code/__pycache__
