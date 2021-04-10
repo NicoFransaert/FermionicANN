@@ -1,0 +1,7 @@
+#!/bin/bash -l
+#PBS -l nodes=1:ppn=1
+#PBS -l mem=8gb
+#PBS -l walltime=3:00:00
+cd $PBS_O_WORKDIR
+
+python FermionicANN.py -machine rbm -index ${PBS_ARRAYID}
