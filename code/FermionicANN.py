@@ -6,14 +6,14 @@ import json
 
 import utility as ut
 import TrainingRBM as rbm
+import system_dicts
 # import TrainingRNN as rnn
 
 
-def run_FRBM(systemData={}, alpha=2, learningrate=0.01, optimizer='sgd', numsamples=1000, numsteps=5000, seed=123):
+def run_FRBM(systemData={}, outfile=None, alpha=2, lr=0.1, opt='sgd', samples=10000, use_sampler_init_trick=False, steps=200, seed=123):
 
     # Call function from TrainingRBM.py
-    rbm.run_RBM(systemData=systemData, outfile='', alpha=alpha, lr=learningrate, opt=optimizer, samples=numsamples, steps=numsteps, seed=seed)
-
+    rbm.run_RBM(systemData=systemData, outfile=outfile, alpha=alpha, lr=lr, opt=opt, samples=samples, steps=steps, seed=seed)
 
     return 0
 
@@ -21,7 +21,7 @@ def run_FRBM(systemData={}, alpha=2, learningrate=0.01, optimizer='sgd', numsamp
 def run_FRNN():
 
     # Call function from TrainingRBM.py
-
+    rnn.run_RNN(systemData=systemData, N = 10, num_units = 50, num_layers = 1, learningrate = 5e-3, lrschedule='C', numsamples = 100000, numsteps = 2000, seed = 123)
 
     return 0
 
@@ -29,10 +29,18 @@ def run_FRNN():
 
 
 
-
-
 if __name__ == '__main__':
-    # systemData = ut.make_dict(atom='H2', basis='STO-3G')
-    run_FRBM()
+    import argparse
+    parser = argparse.ArgumentParser(description='Run optimization for 1 systemData')
+    parser.add_argument('-index', type=int)
+    parser.add_argument('-machine', type=str)
+    args = parser.parse_args()
 
-    # integralData = 
+    # example for dissociation curve H2
+    if args.index: system = system_dicts.sto3g_H2[args.index]
+    else: system = system_dicts.sto3g_H2[3] #eq config
+
+    if args.machine == 'rbm':
+        run_FRBM(systemData=system, samples=100000)
+    if args.machine == 'rnn':
+        run_FRBM(systemData=system)

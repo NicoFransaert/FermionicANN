@@ -1,2 +1,5 @@
 .vscode/
 .gitignore
+RBM_test_29.ipynb
+notebooks/__pycache__
+code/__pycache__
