@@ -119,9 +119,10 @@ class RNNwavefunction():
             output_mask[:, 0] = self.N-self.n_electrons - (n-counter) > 0
             output_mask[:, 1] = self.n_electrons - counter > 0
             output_ampl = output_ampl * torch.from_numpy(output_mask)
-            output_ampl = torch.nn.functional.normalize(output_ampl, eps = 1e-30)
+
 
             #sample from probabilities
+            output_ampl = torch.nn.functional.normalize(output_ampl, eps = 1e-30)
             sample_temp = torch.multinomial(output_ampl**2, 1)[:,0]
 
             #store new samples
@@ -181,9 +182,8 @@ class RNNwavefunction():
             output_mask[:, 1] = self.n_electrons - counter > 0
             output_ampl = output_ampl * torch.from_numpy(output_mask)
 
-            output_ampl = torch.nn.functional.normalize(output_ampl, eps = 1e-30)
-
             # store amplitude and phase of marginal probability amplitude
+            output_ampl = torch.nn.functional.normalize(output_ampl, eps = 1e-30)
             amplitudes[:, n,  0] = (output_ampl * one_hot_samples[:,n]).sum(dim = 1)
             # amplitudes[:, n,  1] = (output_phase * one_hot_samples[:,n]).sum(dim = 1)
 

@@ -32,7 +32,7 @@ print(device)
 def run_RNN(systemData, num_units = 50, num_layers = 2, learningrate = 2.5e-4, lrschedule='O', numsamples = 500, numsteps = 1000, seed = 123):
 
 	# make outfile
-	path = './../data/RNN_runs/rnn/'
+	path = './../data/RNN_runs/'
 	filename = 'rnn_'
 	filename += systemData['basis'] + '_'
 	filename += systemData['molecule'] + '_'
@@ -178,6 +178,10 @@ def run_RNN(systemData, num_units = 50, num_layers = 2, learningrate = 2.5e-4, l
 
 		energy_dictList.append(step_dictionary)
 
+	# Error bar on last energy and variance (https://math.stackexchange.com/questions/72975/variance-of-sample-variance)
+	sigmaE = torch.sqrt( torch.mean((local_energies[:,0]-meanE)**2)/numsamples )
+	sigmavarE = torch.sqrt(torch.abs( torch.mean((local_energies[:,0]-meanE)**4)/numsamples - varE**4*(numsamples-3)/(numsamples*(numsamples-1)) ))
+
 	end = time.time()
 
     # Write data to savefile. Energies & variances for all iterations and wf for final iteration. 
@@ -187,84 +191,20 @@ def run_RNN(systemData, num_units = 50, num_layers = 2, learningrate = 2.5e-4, l
 
 	torch.save(wf, outfile+'.pt')
 
-	# ------------- Start evaluation run ---------------------------
-	print('starting evaluation run')
-
-	eval_dictionary = {"Output": dict()}
-
-	start_eval = time.time()
-	eval_samples = int(1e5)
-	samples = wf.sample(eval_samples)
-
-	sigmas = torch.zeros((5*N*eval_samples,N), dtype=torch.int64) 
-	H = torch.zeros(5*N*eval_samples, dtype=torch.float32) 
-	sigmaH = torch.zeros((5*N,N), dtype=torch.int32)
-	matrixelements = torch.zeros(5*N, dtype=torch.float32) 
-
-	amplitudes = torch.zeros(5*N*eval_samples, 2, dtype=torch.float32, device=device)
-	local_energies = torch.zeros(eval_samples, 2, dtype=torch.float32, device=device)
-
-	with torch.no_grad():
-
-		slices, len_sigmas = J1J2Slices(ha, samples.cpu().numpy(), sigmas, H, sigmaH, matrixelements, n_electrons)
-
-		steps = len_sigmas//30000+1 # Process the sigmas in steps to avoid allocating too much memory
-
-		for i in range(steps):
-			if i < steps-1:
-				cut = slice((i*len_sigmas)//steps,((i+1)*len_sigmas)//steps)
-			else:
-				cut = slice((i*len_sigmas)//steps,len_sigmas)
-
-
-			amplitudes[cut] = wf.amplitude(sigmas[cut].to(device))
-
-		# Generating the local energies
-		for n in range(len(slices)):
-			s=slices[n]
-			local_energies[n,0] = torch.dot(H[s].to(device), (torch.mul(amplitudes[s][:,0]/amplitudes[s][0,0],torch.cos(amplitudes[s][:,1]-amplitudes[s][0,1])))) #real part
-			# local_energies[n,1] = torch.dot(H[s].to(device), (torch.mul(amplitudes[s][:,0]/amplitudes[s][0,0],torch.sin(amplitudes[s][:,1]-amplitudes[s][0,1])))) #complex part	
-
-
-		eval_meanE = torch.mean(local_energies, dim=0)[0]
-		eval_varE = torch.var((local_energies[:,0]))
-
-		# Error bar on energy and variance (https://math.stackexchange.com/questions/72975/variance-of-sample-variance)
-		eval_sigmaE = torch.sqrt( torch.mean((local_energies[:,0]-eval_meanE)**2)/eval_samples )
-		eval_sigmavarE = torch.sqrt(torch.abs( torch.mean((local_energies[:,0]-eval_meanE)**4)/eval_samples - eval_varE**4*(eval_samples-3)/(eval_samples*(eval_samples-1)) ))
-
-
-	eval_step_dictionary = {
-	"Energy": { "Mean": float(eval_meanE), "Sigma": float(eval_sigmaE) },
-	"EnergyVariance": { "Mean": float(eval_varE), "Sigma": float(eval_sigmavarE) },
-	"Iteration": int(0) }
-
-	eval_dictionary["Output"] = [eval_step_dictionary]
-	with open(outfile+'_eval.log', 'w') as f:
-		json.dump(eval_dictionary, f)
-
-
-	end_eval = time.time()
-
-	print('ending evaluation run')
-	# ------------- END evaluation run -----------------------
-
-
-	# Also save the time of the optimization
+	# Save all useful energy in one file
 	with open(outfile+'.META', 'w') as f:
 		json.dump({	"SystemData": systemData,
-					"Total_energy": {"Mean": systemData['nuc_rep_energy'] + float(eval_meanE),
-									 "Sigma": float(eval_sigmaE)},
-					"Energy_variance": {"Mean": float(eval_varE), 
-										"Sigma": float(eval_sigmavarE)}, 
+					"Total_energy": {"Mean": systemData['nuc_rep_energy'] + float(meanE),
+									 "Sigma": float(sigmaE)},
+					"Energy_variance": {"Mean": float(varE), 
+										"Sigma": float(sigmavarE)}, 
 					"Time_optimization": end-start, 
+					"Steps": numsteps,
 					"Optimization_samples": numsamples,
 					"Time_sampling": {"Mean": np.mean(sample_times), "Variance": np.var(sample_times)},
 					"LocalSize": 2,
 					"Seed": seed,
-					"Evaluation_samples": eval_samples,
-					"Evaluation_time": end_eval-start_eval,
-					"Parameters_total": numparam,		
+					"Parameters_total": numparam		
 		}, f)
 
 

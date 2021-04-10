@@ -4,9 +4,28 @@ from JW_hamiltonian import JW_H
 import numpy as np
 import time
 
-def run_RBM(systemData={}, outfile=None, alpha=2, lr=0.1, opt='sgd', samples=1000, use_sampler_init_trick=False, steps=200, seed=123):
+def run_RBM(systemData, alpha=2, lr=0.1, opt='sgd', samples=1000, use_sampler_init_trick=False, steps=200, seed=123):
 
-    ha = JW_H(systemData)
+    # make outfile
+    path = './../data/RBM_runs/'
+    filename = 'rbm_'
+    filename += systemData['basis'] + '_'
+    filename += systemData['molecule'] + '_'
+    filename += str(systemData['distance']).replace('.', '-')[:6] + '_'
+    filename += 'eq' + str(int(systemData['eq'])) + '_'
+    filename += 'a' + str(alpha) + '_'
+    filename +=  opt + '_'
+    filename += 'lr' + str(lr).split('.')[-1] + '_'
+    filename += 'ns' + str(samples)
+    outfile = path+filename
+
+    print(' \n #### outfile is: ', outfile, ' #### \n')
+
+	# extract information from systemData
+	n_electrons= systemData['n_electrons']
+
+	# make hamiltonian operator
+	ha = JW_H(systemData=systemData)
     
     g = nk.graph.Hypercube(n_dim=1, length=ha.hilbert.size, pbc=False)
     hi = nk.hilbert.Qubit(graph=g)
@@ -66,12 +85,23 @@ def run_RBM(systemData={}, outfile=None, alpha=2, lr=0.1, opt='sgd', samples=100
     print('Has', ma.n_par, 'parameters')
     print('The RBM calculation took',end-start,'seconds')
 
-    # Do evaluation run with many samples and zero learning rate
-    op_eval = nk.optimizer.Sgd(learning_rate=1e-10)
-    eval_samples = int(1e5)
-    evaluate = nk.variational.Vmc(hamiltonian=ha, sampler=sa, optimizer=op_eval, n_samples=eval_samples)
-    start_eval = time.time()
-    evaluate.run(out=outfile + "_eval" if outfile else None, n_iter=1)
-    end_eval = time.time()
+
+
+    # Save all useful energy in one file
+    #### CHANGE THIS YANNICK
+	with open(outfile+'.META', 'w') as f:
+		json.dump({	"SystemData": systemData,
+					"Total_energy": {"Mean": systemData['nuc_rep_energy'] + float(meanE),
+									 "Sigma": float(sigmaE)},
+					"Energy_variance": {"Mean": float(varE), 
+										"Sigma": float(sigmavarE)}, 
+					"Time_optimization": end-start, 
+					"Steps": steps,
+					"Optimization_samples": numsamples,
+					"Time_sampling": {"Mean": np.mean(sample_times), "Variance": np.var(sample_times)},
+					"LocalSize": 2,
+					"Seed": seed,
+					"Parameters_total": ma.n_par		
+		}, f)
 
     return 0
