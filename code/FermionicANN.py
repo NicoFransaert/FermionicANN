@@ -4,9 +4,8 @@ import os
 import time
 import json
 
-import utility as ut
 import TrainingRBM as rbm
-import system_dicts
+from system_dicts import *
 # import TrainingRNN as rnn
 
 
@@ -31,16 +30,17 @@ def run_FRNN():
 
 if __name__ == '__main__':
     import argparse
-    parser = argparse.ArgumentParser(description='Run optimization for 1 systemData')
+    parser = argparse.ArgumentParser(description='Run optimization for 1 system')
     parser.add_argument('-index', default=0, type=int)
     parser.add_argument('-machine', default='rbm', type=str)
     args = parser.parse_args()
 
     # example for dissociation curve H2
-    if args.index: system = system_dicts.sto3g_H2[args.index]
-    else: system = system_dicts.sto3g_H2[3] #eq config
+    # if args.index: system = system_dicts.sto3g_H2[args.index]
+    
+    system = sto3g_CH4_eq
 
     if args.machine == 'rbm':
-        run_FRBM(systemData=system, samples=100000)
+        run_FRBM(systemData=system, samples=10000)
     if args.machine == 'rnn':
-        run_FRBM(systemData=system)
+        run_FRRM(systemData=system)
