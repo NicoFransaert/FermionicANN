@@ -41,6 +41,13 @@ if __name__ == '__main__':
 
     # example for dissociation curve H2 (-index 3 is eq)
     if args.index: system = sto3g_H2[args.index]
+
+    # num_units & num_layers -> expressivity of ANN
+    # num_units [50 - 100] are customary || num_layers [1-4] are customariy (but incredibly slow, exponential scaling in numparam)
+    # learningrates in range of [5e-2, 1e-2, 5e-3, 1e-3, 5e-4] would seem sensible
+    # lrschedule 'C' means constant, but more often than not 'O' (meaning decaying lr) is used!
+    # For the custom values (below) 1000 steps are sufficient
+    # Of course, numsteps depends heavily on used learningrate, lrschedule, RNN size,...
     
     # system = sto3g_CH4_eq
 
