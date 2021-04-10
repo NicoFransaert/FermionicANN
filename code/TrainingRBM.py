@@ -21,12 +21,12 @@ def run_RBM(systemData, alpha=2, lr=0.1, opt='sgd', samples=1000, use_sampler_in
 
     print(' \n #### outfile is: ', outfile, ' #### \n')
 
-	# extract information from systemData
-	n_electrons= systemData['n_electrons']
+    # extract information from systemData
+    n_electrons= systemData['n_electrons']
 
-	# make hamiltonian operator
-	ha = JW_H(systemData=systemData)
-    
+    # make hamiltonian operator
+    ha = JW_H(systemData=systemData)
+
     g = nk.graph.Hypercube(n_dim=1, length=ha.hilbert.size, pbc=False)
     hi = nk.hilbert.Qubit(graph=g)
     assert(hi.size==ha.hilbert.size)
@@ -49,8 +49,8 @@ def run_RBM(systemData, alpha=2, lr=0.1, opt='sgd', samples=1000, use_sampler_in
             sa = nk.sampler.MetropolisExchange(machine=ma, n_chains=chain_length)
             for ss in sa.samples(1):
                 for s in ss:
-                     #print(s, list(s).count(1))
-                     n_up.append(int(list(s).count(1)))
+                        #print(s, list(s).count(1))
+                        n_up.append(int(list(s).count(1)))
             if n_up.count(systemData["n_electrons"]) == chain_length: print('found after %d tries' %(i)); break
         if i+1==tries:
             print('sampler init config not found, using MetropolisLocal')
@@ -89,19 +89,19 @@ def run_RBM(systemData, alpha=2, lr=0.1, opt='sgd', samples=1000, use_sampler_in
 
     # Save all useful energy in one file
     #### CHANGE THIS YANNICK
-	with open(outfile+'.META', 'w') as f:
-		json.dump({	"SystemData": systemData,
-					"Total_energy": {"Mean": systemData['nuc_rep_energy'] + float(meanE),
-									 "Sigma": float(sigmaE)},
-					"Energy_variance": {"Mean": float(varE), 
-										"Sigma": float(sigmavarE)}, 
-					"Time_optimization": end-start, 
-					"Steps": steps,
-					"Optimization_samples": numsamples,
-					"Time_sampling": {"Mean": np.mean(sample_times), "Variance": np.var(sample_times)},
-					"LocalSize": 2,
-					"Seed": seed,
-					"Parameters_total": ma.n_par		
-		}, f)
+    with open(outfile+'.META', 'w') as f:
+        json.dump({	"SystemData": systemData,
+                    "Total_energy": {"Mean": systemData['nuc_rep_energy'] + float(meanE),
+                                        "Sigma": float(sigmaE)},
+                    "Energy_variance": {"Mean": float(varE), 
+                                        "Sigma": float(sigmavarE)}, 
+                    "Time_optimization": end-start, 
+                    "Steps": steps,
+                    "Optimization_samples": numsamples,
+                    "Time_sampling": {"Mean": np.mean(sample_times), "Variance": np.var(sample_times)},
+                    "LocalSize": 2,
+                    "Seed": seed,
+                    "Parameters_total": ma.n_par		
+        }, f)
 
     return 0
