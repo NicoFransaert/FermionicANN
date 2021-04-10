@@ -6,8 +6,11 @@ import json
 import os
 import time
 
-import torch
-import torch.backends.cudnn as cudnn
+try:
+	import torch
+	import torch.backends.cudnn as cudnn
+except:
+	print('torch not installed')
 
 # Own imports
 from ComplexRNNwavefunction import RNNwavefunction
@@ -33,7 +36,7 @@ def run_RNN(systemData, num_units = 50, num_layers = 2, learningrate = 2.5e-4, l
 	filename = 'rnn_'
 	filename += systemData['basis'] + '_'
 	filename += systemData['molecule'] + '_'
-	filename += str(systemData['distance']).replace('.', '-') + '_'
+	filename += str(systemData['distance']).replace('.', '-')[:6] + '_'
 	filename += 'eq' + str(int(systemData['eq'])) + '_'
 	filename += 'nU' + str(num_units) + '_'
 	filename += 'nL' + str(num_layers) + '_'
@@ -42,7 +45,7 @@ def run_RNN(systemData, num_units = 50, num_layers = 2, learningrate = 2.5e-4, l
 	filename += 'ns' + str(numsamples)
 	outfile = path+filename
 
-	print('outfile is: ', outfile)
+	print(' \n #### outfile is: ', outfile, ' #### \n')
 
 	# extract information from systemData
 	N = systemData['n_basisfuncs']
@@ -249,13 +252,20 @@ def run_RNN(systemData, num_units = 50, num_layers = 2, learningrate = 2.5e-4, l
 
 	# Also save the time of the optimization
 	with open(outfile+'.META', 'w') as f:
-		json.dump({	"Time_optimization": end-start, 
+		json.dump({	"SystemData": systemData,
+					"Total_energy": {"Mean": systemData['nuc_rep_energy'] + float(eval_meanE),
+									 "Sigma": float(eval_sigmaE)},
+					"Energy_variance": {"Mean": float(eval_varE), 
+										"Sigma": float(eval_sigmavarE)}, 
+					"Time_optimization": end-start, 
+					"Optimization_samples": numsamples,
 					"Time_sampling": {"Mean": np.mean(sample_times), "Variance": np.var(sample_times)},
 					"LocalSize": 2,
 					"Seed": seed,
 					"Evaluation_samples": eval_samples,
 					"Evaluation_time": end_eval-start_eval,
-					"Parameters_total": numparam}, f)
+					"Parameters_total": numparam,		
+		}, f)
 
 
 def J1J2MatrixElements(ha, sigmap, sigmaH, matrixelements, n_electrons):
