@@ -23,8 +23,6 @@ use_cuda = torch.cuda.is_available()
 device = torch.device("cuda:0" if use_cuda else "cpu")
 print(device)
 
-# np.set_printoptions(threshold=np.inf)
-
 
 # num_units stands for the dimension d_h of the hidden states h_n (which get concatenated with one-hot visible units)
 # num_layers is the 'height' (# RNN cells) at every visible unit
@@ -168,8 +166,8 @@ def run_RNN(systemData, num_units = 50, num_layers = 2, learningrate = 2.5e-4, l
 
 		meanE = torch.mean(local_energies, dim=0)[0]
 		varE = torch.var((local_energies[:,0]))
-		print('mean energy: ', meanE)
-		print('variance: ', varE)
+		print('mean energy: ', meanE.item())
+		print('variance: ', varE.item())
 		
 		step_dictionary = {
 		"Energy": { "Mean": float(meanE) },
@@ -261,7 +259,3 @@ def J1J2Slices(ham, sigmasp, sigmas, H, sigmaH, matrixelements, n_electrons):
 		sigmas_length += num #Increasing the length of matrix elements sigmas
 
 	return slices, sigmas_length
-
-
-if __name__ == "__main__":
-	run_RNN(N = 10, num_units = 50, num_layers = 1, learningrate = 5e-3, lrschedule='C', numsamples = 10000, numsteps = 5000, seed = 123)

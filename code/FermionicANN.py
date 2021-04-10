@@ -54,4 +54,4 @@ if __name__ == '__main__':
     if args.machine == 'rbm':
         run_FRBM(systemData=system, samples=10000)
     if args.machine == 'rnn':
-        run_FRNN(systemData=system, num_units = 50, num_layers = 1, learningrate = 5e-3, lrschedule='C', numsamples = 100000, numsteps = 500, seed = 123)
+        run_FRNN(systemData=system, num_units = 50, num_layers = 1, learningrate = 5e-3, lrschedule='C', numsamples = 100000, numsteps = 1000, seed = 123)
