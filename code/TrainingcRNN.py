@@ -141,7 +141,7 @@ def run_RNN(systemData, num_units = 50, num_layers = 2, learningrate = 2.5e-4, l
 			for n in range(len(slices)):
 				s=slices[n]
 				local_energies[n,0] = torch.dot(H[s].to(device), (torch.mul(amplitudes[s][:,0]/amplitudes[s][0,0],torch.cos(amplitudes[s][:,1]-amplitudes[s][0,1])))) #real part
-				local_energies[n,1] = torch.dot(H[s].to(device), (torch.mul(amplitudes[s][:,0]/amplitudes[s][0,0],torch.sin(amplitudes[s][:,1]-amplitudes[s][0,1])))) #complex part
+				local_energies[n,1] = torch.dot(H[s].to(device), (torch.mul(amplitudes[s][:,0]/amplitudes[s][0,0],torch.sin(amplitudes[s][:,1]-amplitudes[s][0,1])))) #complex part			
 			# end_time_localE = time.time()
 			# print('local energy calculation took: ', end_time_localE-start_time_localE)
 
@@ -211,9 +211,9 @@ def run_RNN(systemData, num_units = 50, num_layers = 2, learningrate = 2.5e-4, l
 
 
 	### --------------- Evaluation run --------------------- ######
-	evalsamples = int(1e6)
-	samples = wf.sample(evalsamples)
+	evalsamples = int(1e5)
 	print('start evaluation with: ', evalsamples, ' samples')
+	samples = wf.sample(evalsamples)
 
 	# initialise all matrices
 	sigmas = torch.zeros((2*N**2*evalsamples,N), dtype=torch.int64) # Array to store all the diagonal and non diagonal sigmas for all the samples (We create it here for memory efficiency as we do not want to allocate it at each training step)
@@ -251,7 +251,7 @@ def run_RNN(systemData, num_units = 50, num_layers = 2, learningrate = 2.5e-4, l
 		for n in range(len(slices)):
 			s=slices[n]
 			local_energies[n,0] = torch.dot(H[s].to(device), (torch.mul(amplitudes[s][:,0]/amplitudes[s][0,0],torch.cos(amplitudes[s][:,1]-amplitudes[s][0,1])))) #real part
-			local_energies[n,1] = torch.dot(H[s].to(device), (torch.mul(amplitudes[s][:,0]/amplitudes[s][0,0],torch.sin(amplitudes[s][:,1]-amplitudes[s][0,1])))) #complex part
+			# local_energies[n,1] = torch.dot(H[s].to(device), (torch.mul(amplitudes[s][:,0]/amplitudes[s][0,0],torch.sin(amplitudes[s][:,1]-amplitudes[s][0,1])))) #complex part			
 		# end_time_localE = time.time()
 		# print('local energy calculation took: ', end_time_localE-start_time_localE)
 
