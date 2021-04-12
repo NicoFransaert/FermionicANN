@@ -63,7 +63,7 @@ if __name__ == '__main__':
         combos = [i for i in itertools.product(*list(grid.values()))]
         num_units, num_layers, lr, lrschedule = combos[args.index]
     '''
-    #system = sto3g_H2_eq
+    system = sto3g_H2_eq
 
     if args.machine == 'rbm':
         #run_FRBM(systemData=system, alpha=1, lr=0.1, opt='sgd', numsamples=100000, use_sampler_init_trick=False, numsteps=2000) # use this for a single run
