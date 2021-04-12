@@ -4,7 +4,6 @@ import itertools
 
 import TrainingRBM as rbm
 import TrainingcRNN as crnn
-import TrainingpRNN as prnn
 from system_dicts import *
 
 
@@ -18,14 +17,9 @@ def run_FRBM(systemData={}, alpha=2, lr=0.1, opt='sgd', numsamples=10000, use_sa
     return 0
 
 
-def run_FRNN(systemData, Complex=True, num_units = 50, num_layers = 1, learningrate = 5e-3, lrschedule='C', numsamples = 100000, numsteps = 2000, save_dir=None, seed = 123):
+def run_FRNN(systemData, num_units = 50, num_layers = 1, learningrate = 5e-3, lrschedule='C', numsamples = 100000, numsteps = 2000, seed = 123):
 
-    if Complex:
-        # Call function from TrainingcRNN.py
-        crnn.run_RNN(systemData=systemData, num_units=num_units, num_layers=num_layers, learningrate=learningrate, lrschedule=lrschedule, numsamples=numsamples, numsteps=numsteps, save_dir=save_dir, seed=seed)
-    else:
-        # Call function from TrainingpRNN.py
-        prnn.run_RNN(systemData=systemData, num_units=num_units, num_layers=num_layers, learningrate=learningrate, lrschedule=lrschedule, numsamples=numsamples, numsteps=numsteps, seed=seed)
+    crnn.run_RNN(systemData=systemData, num_units=num_units, num_layers=num_layers, learningrate=learningrate, lrschedule=lrschedule, numsamples=numsamples, numsteps=numsteps, seed=seed)
     
     print('Simulation done!')
 
@@ -75,8 +69,7 @@ if __name__ == '__main__':
             num_units = [50],
             num_layers = [1],
             lr = [5e-3],
-            lrschedule = ['C'],
-            Complex = [False]
+            lrschedule = ['C']
         )
         combos = [i for i in itertools.product(*list(grid.values()))]
         num_units, num_layers, lr, lrschedule, Complex = combos[args.index]
@@ -88,4 +81,4 @@ if __name__ == '__main__':
         run_FRBM(systemData=system, alpha=alpha, lr=lr, opt=opt, numsamples=1000, use_sampler_init_trick=trick, numsteps=500, save_dir=save_dir) # or this for argumetns from grid
     if args.machine == 'rnn':
         #run_FRNN(systemData=system, num_units = 50, num_layers = 1, learningrate = 5e-3, lrschedule='C', numsamples = 100000, numsteps = 1000)                     # use this for a single run
-        run_FRNN(systemData=system, Complex=Complex, num_units = num_units, num_layers = num_layers, learningrate = lr, lrschedule=lrschedule, numsamples = 1000, numsteps = 2, save_dir=save_dir) # or this for argumetns from grid
+        run_FRNN(systemData=system, num_units = num_units, num_layers = num_layers, learningrate = lr, lrschedule=lrschedule, numsamples = 1000, numsteps = 2, save_dir=save_dir) # or this for argumetns from grid
