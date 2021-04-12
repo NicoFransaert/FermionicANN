@@ -199,12 +199,14 @@ def run_RNN(systemData, num_units = 50, num_layers = 2, learningrate = 2.5e-4, l
                     "Time_optimization": end-start, 
                     "Network": {"machine": "crnn", "nU": num_units, "nL": num_layers, "n_par": numparam},
                     "Training": {"optimiser": "adam", "lr": learningrate, "lrs": lrschedule, "numsamples": numsamples, "seed": seed, "steps": numsteps},
+					"Evaluation_samples": 0,
                     "LocalSize": 2,
 					"Time_sampling": {"Mean": np.mean(sample_times), "Variance": np.var(sample_times)},
 		}, f)
 
 
-	### Evaluation run ######
+
+	### --------------- Evaluation run --------------------- ######
 	evalsamples = int(1e6)
 	samples = wf.sample(evalsamples)
 	print('start evaluation with: ', evalsamples, ' samples')
@@ -256,9 +258,11 @@ def run_RNN(systemData, num_units = 50, num_layers = 2, learningrate = 2.5e-4, l
 	varE = torch.var((local_energies[:,0]))
 	print('mean energy: ', meanE.item())
 	print('variance: ', varE.item())
+	print('The final system energy is:', systemData['nuc_rep_energy'] + float(meanE))
 
-	print('end evaluation')
-
+	# Error bar on last energy and variance (https://math.stackexchange.com/questions/72975/variance-of-sample-variance)
+	sigmaE = torch.sqrt( torch.mean((local_energies[:,0]-meanE)**2)/numsamples )
+	sigmavarE = torch.sqrt(torch.abs( torch.mean((local_energies[:,0]-meanE)**4)/numsamples - varE**4*(numsamples-3)/(numsamples*(numsamples-1)) ))
 
 	# Save all useful energy in one file
 	with open(outfile+'.META', 'w') as f:
@@ -267,14 +271,19 @@ def run_RNN(systemData, num_units = 50, num_layers = 2, learningrate = 2.5e-4, l
 									 "Sigma": float(sigmaE)},
 					"Energy_variance": {"Mean": float(varE), 
 										"Sigma": float(sigmavarE)}, 
-					"Time_optimization": end-start, 
-					"Steps": numsteps,
-					"Optimization_samples": numsamples,
+                    "Time_optimization": end-start, 
+                    "Network": {"machine": "crnn", "nU": num_units, "nL": num_layers, "n_par": numparam},
+                    "Training": {"optimiser": "adam", "lr": learningrate, "lrs": lrschedule, "numsamples": numsamples, "seed": seed, "steps": numsteps},
+					"Evaluation_samples": evalsamples,
+                    "LocalSize": 2,
 					"Time_sampling": {"Mean": np.mean(sample_times), "Variance": np.var(sample_times)},
-					"LocalSize": 2,
-					"Seed": seed,
-					"Parameters_total": numparam		
 		}, f)
+
+
+	print('end evaluation')
+
+	##### --------- End evaluation run ---------- ######
+
 
 def J1J2MatrixElements(ha, sigmap, sigmaH, matrixelements, n_electrons):
 	"""
