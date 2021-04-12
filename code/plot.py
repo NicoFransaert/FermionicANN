@@ -4,6 +4,9 @@ import json
 
 meta_file = '../data/RBM_runs/rbm_sto3g_H2_0-7348_eq1_a1_sgd_lr1_ns10000.META'
 hist_file = '../data/RBM_runs/rbm_sto3g_H2_0-7348_eq1_a1_sgd_lr1_ns10000.log'
+
+meta_file = '../data/RBM_runs/rbm_sto3g_H2_0-7348_eq1_a1_sgd_lr1_ns10000_trick.META'
+hist_file = '../data/RBM_runs/rbm_sto3g_H2_0-7348_eq1_a1_sgd_lr1_ns10000_trick.log'
 with open(meta_file) as jf:
     meta = json.load(jf)
 with open(hist_file) as jf:

@@ -5,10 +5,11 @@ import numpy as np
 import json
 import time
 
-def run_RBM(systemData, alpha=2, lr=0.1, opt='sgd', numsamples=1000, use_sampler_init_trick=False, numsteps=200, seed=123):
+def run_RBM(systemData, alpha=2, lr=0.1, opt='sgd', numsamples=1000, use_sampler_init_trick=False, numsteps=200, save_dir=None, seed=123):
 
     # make outfile
     path = './../data/RBM_runs/'
+    if save_dir: path += save_dir + '/'
     filename = 'rbm_'
     filename += systemData['basis'] + '_'
     filename += systemData['molecule'] + '_'
@@ -60,6 +61,7 @@ def run_RBM(systemData, alpha=2, lr=0.1, opt='sgd', numsamples=1000, use_sampler
 
     else:
         sa = nk.sampler.MetropolisLocal(machine=ma)
+        #sa = nk.sampler.ExactSampler(machine=ma)
         
 
     if opt == 'sgd':
@@ -86,8 +88,13 @@ def run_RBM(systemData, alpha=2, lr=0.1, opt='sgd', numsamples=1000, use_sampler
     print('### RBM calculation')
     print('Has', ma.n_par, 'parameters')
     print('The RBM calculation took',end-start,'seconds')
-
-
+    
+    #eval run
+    op_eval = nk.optimizer.Sgd(learning_rate=1e-10)
+    vmc = nk.variational.Vmc(hamiltonian=ha, sampler=sa, optimizer=op, n_samples=int(1e6))
+    vmc.run(n_iter=1)
+    
+    print('The final system energy is:', systemData['nuc_rep_energy'] + float(vmc.energy.mean.real))
 
     # Save all useful energy in one file
     with open(outfile+'.META', 'w') as f:
@@ -98,6 +105,7 @@ def run_RBM(systemData, alpha=2, lr=0.1, opt='sgd', numsamples=1000, use_sampler
                     "Time_optimization": end-start, 
                     "Network": {"machine": "rbm", "alpha": alpha, "n_par": ma.n_par},
                     "Training": {"optimiser": opt, "lr": lr, "numsamples": numsamples, "trick": use_sampler_init_trick, "seed": seed, "steps": numsteps},
+                    "Evaluation_samples": int(1e6),
                     "LocalSize": 2,
         }, f)
 
