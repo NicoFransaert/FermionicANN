@@ -2,7 +2,8 @@ import netket as nk
 import numpy as np
 
 import TrainingRBM as rbm
-import TrainingRNN as rnn
+import TrainingpRNN as prnn
+import TrainingcRNN as crnn
 from system_dicts import *
 
 
@@ -16,10 +17,14 @@ def run_FRBM(systemData={}, alpha=2, lr=0.1, opt='sgd', numsamples=10000, use_sa
     return 0
 
 
-def run_FRNN(systemData, num_units = 50, num_layers = 1, learningrate = 5e-3, lrschedule='C', numsamples = 100000, numsteps = 2000, seed = 123):
+def run_FRNN(systemData, complex=True, num_units = 50, num_layers = 1, learningrate = 5e-3, lrschedule='C', numsamples = 100000, numsteps = 2000, seed = 123):
 
-    # Call function from TrainingRNN.py
-    rnn.run_RNN(systemData=systemData, num_units=num_units, num_layers=num_layers, learningrate=learningrate, lrschedule=lrschedule, numsamples=numsamples, numsteps=numsteps, seed=seed)
+    if complex:
+        # Call function from TrainingcRNN.py
+        crnn.run_RNN(systemData=systemData, num_units=num_units, num_layers=num_layers, learningrate=learningrate, lrschedule=lrschedule, numsamples=numsamples, numsteps=numsteps, seed=seed)
+    else:
+        # Call function from TrainingpRNN.py
+        prnn.run_RNN(systemData=systemData, num_units=num_units, num_layers=num_layers, learningrate=learningrate, lrschedule=lrschedule, numsamples=numsamples, numsteps=numsteps, seed=seed)
     
     print('Simulation done!')
 
@@ -46,9 +51,9 @@ if __name__ == '__main__':
     # For the custom values (below) 1000 steps are sufficient
     # Of course, numsteps depends heavily on used learningrate, lrschedule, RNN size,...
     
-    system = sto3g_H2_eq
+    system = sto3g_CH4_eq
 
     if args.machine == 'rbm':
         run_FRBM(systemData=system, alpha=2, lr=0.1, opt='sgd', numsamples=10000, use_sampler_init_trick=False, steps=200)
     if args.machine == 'rnn':
-        run_FRNN(systemData=system, num_units = 50, num_layers = 1, learningrate = 5e-3, lrschedule='C', numsamples = 100000, numsteps = 1000, seed = 123)
+        run_FRNN(systemData=system, complex=True, num_units = 50, num_layers = 1, learningrate = 5e-3, lrschedule='C', numsamples = 10000, numsteps = 5000, seed = 123)

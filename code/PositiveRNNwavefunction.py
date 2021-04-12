@@ -185,7 +185,7 @@ class RNNwavefunction():
             # store amplitude and phase of marginal probability amplitude
             output_ampl = torch.nn.functional.normalize(output_ampl, eps = 1e-30)
             amplitudes[:, n,  0] = (output_ampl * one_hot_samples[:,n]).sum(dim = 1)
-            amplitudes[:, n,  1] = (output_phase * one_hot_samples[:,n]).sum(dim = 1)
+            # amplitudes[:, n,  1] = (output_phase * one_hot_samples[:,n]).sum(dim = 1)
 
             inputs= one_hot_samples[:,n]
 
@@ -195,7 +195,7 @@ class RNNwavefunction():
 
 
         tot_ampl[:, 0] = amplitudes[:,:,0].prod(dim = 1)
-        tot_ampl[:, 1] = amplitudes[:,:,1].sum(dim = 1)
+        # tot_ampl[:, 1] = amplitudes[:,:,1].sum(dim = 1)
 
         self.amplitudes = tot_ampl
         return self.amplitudes
