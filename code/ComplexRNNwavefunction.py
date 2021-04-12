@@ -175,7 +175,7 @@ class RNNwavefunction():
 
             #Applying softmax layer
             output_ampl = self.dense_ampl(rnn_output)
-            # output_phase = self.dense_phase(rnn_output)
+            output_phase = self.dense_phase(rnn_output)
 
             output_mask = np.zeros((self.numsamples, self.inputdim))
             output_mask[:, 0] = self.N-self.n_electrons - (n-counter) > 0
