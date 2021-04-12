@@ -18,6 +18,7 @@ def run_RBM(systemData, alpha=2, lr=0.1, opt='sgd', numsamples=1000, use_sampler
     filename +=  opt + '_'
     filename += 'lr' + str(lr).split('.')[-1] + '_'
     filename += 'ns' + str(numsamples)
+    if use_sampler_init_trick: filename += '_trick'
     outfile = path+filename
 
     print(' \n #### outfile is: ', outfile, ' #### \n')
