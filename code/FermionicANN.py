@@ -51,6 +51,7 @@ if __name__ == '__main__':
         combos = [i for i in itertools.product(*list(grid.values()))]
         alpha, lr, opt, trick = combos[args.index]
 
+    '''
     # RNN - grid
     if args.machine == 'rnn':
         grid = dict(
@@ -61,12 +62,12 @@ if __name__ == '__main__':
         )
         combos = [i for i in itertools.product(*list(grid.values()))]
         num_units, num_layers, lr, lrschedule = combos[args.index]
-    
-    system = sto3g_H2_eq
+    '''
+    #system = sto3g_H2_eq
 
     if args.machine == 'rbm':
-        #run_FRBM(systemData=system, alpha=2, lr=0.1, opt='sgd', numsamples=10000, use_sampler_init_trick=False, numsteps=1000) # use this for a single run
-        run_FRBM(systemData=system, alpha=alpha, lr=lr, opt=opt, numsamples=10000, use_sampler_init_trick=trick, numsteps=1000) # or this for argumetns from grid
+        #run_FRBM(systemData=system, alpha=1, lr=0.1, opt='sgd', numsamples=100000, use_sampler_init_trick=False, numsteps=2000) # use this for a single run
+        run_FRBM(systemData=system, alpha=alpha, lr=lr, opt=opt, numsamples=10000, use_sampler_init_trick=trick, numsteps=2000) # or this for argumetns from grid
     if args.machine == 'rnn':
         #run_FRNN(systemData=system, num_units = 50, num_layers = 1, learningrate = 5e-3, lrschedule='C', numsamples = 100000, numsteps = 1000)                     # use this for a single run
         run_FRNN(systemData=system, num_units = num_units, num_layers = num_layers, learningrate = lr, lrschedule=lrschedule, numsamples = 100000, numsteps = 1000) # or this for argumetns from grid
