@@ -4,3 +4,4 @@ data/RBM_runs
 data/RNN_runs
 notebooks/__pycache__
 code/__pycache__
+notebooks/scratch
