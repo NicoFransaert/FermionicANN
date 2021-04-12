@@ -196,13 +196,11 @@ def run_RNN(systemData, num_units = 50, num_layers = 2, learningrate = 2.5e-4, l
 									 "Sigma": float(sigmaE)},
 					"Energy_variance": {"Mean": float(varE), 
 										"Sigma": float(sigmavarE)}, 
-					"Time_optimization": end-start, 
-					"Steps": numsteps,
-					"Optimization_samples": numsamples,
+                    "Time_optimization": end-start, 
+                    "Network": {"machine": "crnn", "nU": num_units, "nL": num_layers, "n_par": numparam},
+                    "Training": {"optimiser": "adam", "lr": learningrate, "lrs": lrschedule, "numsamples": numsamples, "seed": seed, "steps": numsteps},
+                    "LocalSize": 2,
 					"Time_sampling": {"Mean": np.mean(sample_times), "Variance": np.var(sample_times)},
-					"LocalSize": 2,
-					"Seed": seed,
-					"Parameters_total": numparam		
 		}, f)
 
 

@@ -5,3 +5,6 @@
 notebooks/__pycache__
 code/__pycache__
 notebooks/scratch
+code/job_array.pbs.o*
+code/job_array.pbs.e*
+
