@@ -96,11 +96,9 @@ def run_RBM(systemData, alpha=2, lr=0.1, opt='sgd', numsamples=1000, use_sampler
                                         "Sigma": float(vmc.energy.error_of_mean)},
                     "Energy_variance": {"Mean": float(vmc.energy.variance)}, 
                     "Time_optimization": end-start, 
-                    "Steps": numsteps,
-                    "Optimization_samples": numsamples,
+                    "Network": {"machine": "rbm", "alpha": alpha, "n_par": ma.n_par},
+                    "Training": {"optimiser": opt, "lr": lr, "numsamples": numsamples, "trick": use_sampler_init_trick, "seed": seed, "steps": numsteps},
                     "LocalSize": 2,
-                    "Seed": seed,
-                    "Parameters_total": ma.n_par		
         }, f)
 
     return 0
