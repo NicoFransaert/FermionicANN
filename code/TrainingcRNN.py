@@ -3,8 +3,8 @@ import netket as nk
 from qiskit.chemistry import FermionicOperator
 import numpy as np
 import json
-import os
 import time
+import os
 
 try:
 	import torch
@@ -27,10 +27,13 @@ device = torch.device("cuda:0" if use_cuda else "cpu")
 # num_units stands for the dimension d_h of the hidden states h_n (which get concatenated with one-hot visible units)
 # num_layers is the 'height' (# RNN cells) at every visible unit
 # See literature/Hibat_RecurrentNNWF.pdf Figure 1!
-def run_RNN(systemData, num_units = 50, num_layers = 2, learningrate = 2.5e-4, lrschedule='O', numsamples = 500, numsteps = 1000, seed = 123):
+def run_RNN(systemData, num_units = 50, num_layers = 2, learningrate = 2.5e-4, lrschedule='O', numsamples = 500, numsteps = 1000, save_dir=None, seed = 123):
 
 	# make outfile
 	path = './../data/RNN_runs/'
+	if save_dir: 
+		os.mkdir(path+save_dir)
+		path += save_dir + '/'
 	filename = 'rnn_'
 	filename += systemData['basis'] + '_'
 	filename += systemData['molecule'] + '_'
