@@ -64,7 +64,7 @@ def run_RBM(systemData, alpha=2, lr=0.1, opt='sgd', numsamples=1000, use_sampler
     if opt == 'sgd':
         op = nk.optimizer.Sgd(learning_rate=lr)
     elif opt == 'adamax':
-        op = nk.optimizer.Adam(alpha=lr)
+        op = nk.optimizer.AdaMax(alpha=lr)
     else:
         raise NotImplementedError('optimizer not implemented: ', opt)
 
