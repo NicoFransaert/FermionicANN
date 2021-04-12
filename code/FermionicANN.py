@@ -1,5 +1,6 @@
 import netket as nk
 import numpy as np
+import itertools
 
 import TrainingRBM as rbm
 import TrainingpRNN as prnn
@@ -7,10 +8,10 @@ import TrainingcRNN as crnn
 from system_dicts import *
 
 
-def run_FRBM(systemData={}, alpha=2, lr=0.1, opt='sgd', numsamples=10000, use_sampler_init_trick=False, steps=200, seed=123):
+def run_FRBM(systemData={}, alpha=2, lr=0.1, opt='sgd', numsamples=10000, use_sampler_init_trick=False, numsteps=200, seed=123):
 
     # Call function from TrainingRBM.py
-    rbm.run_RBM(systemData=systemData, alpha=alpha, lr=lr, opt=opt, numsamples=numsamples, use_sampler_init_trick=use_sampler_init_trick, steps=steps, seed=seed)
+    rbm.run_RBM(systemData=systemData, alpha=alpha, lr=lr, opt=opt, numsamples=numsamples, use_sampler_init_trick=use_sampler_init_trick, numsteps=numsteps, seed=seed)
 
     print('Simulation done!')
 
@@ -44,16 +45,34 @@ if __name__ == '__main__':
     # example for dissociation curve H2 (-index 3 is eq)
     #if args.index: system = sto3g_H2[args.index]
 
-    # num_units & num_layers -> expressivity of ANN
-    # num_units [50 - 100] are customary || num_layers [1-4] are customariy (but incredibly slow, exponential scaling in numparam)
-    # learningrates in range of [5e-2, 1e-2, 5e-3, 1e-3, 5e-4] would seem sensible
-    # lrschedule 'C' means constant, but more often than not 'O' (meaning decaying lr) is used!
-    # For the custom values (below) 1000 steps are sufficient
-    # Of course, numsteps depends heavily on used learningrate, lrschedule, RNN size,...
-    
-    system = sto3g_CH4_eq
+    # RBM - grid
+    if args.machine == 'rbm':
+        grid = dict(
+            alpha = [1, 2, 4],
+            lr = [0.1, 0.01, 0.001],
+            opt = ['sgd', 'adamax'],
+            trick = [False, True],
+        )
+        combos = [i for i in itertools.product(*list(grid.values()))]
+        alpha, lr, opt, trick = combos[args.index]
+
+    '''
+    # RNN - grid
+    if args.machine == 'rnn':
+        grid = dict(
+            num_units = [50, 100],
+            num_layers = [1, 2],
+            lr = [5e-3, 1e-3, 2.5e-4],
+            lrschedule = ['C', 'O'] 
+        )
+        combos = [i for i in itertools.product(*list(grid.values()))]
+        num_units, num_layers, lr, lrschedule = combos[args.index]
+    '''
+    system = sto3g_H2_eq
 
     if args.machine == 'rbm':
-        run_FRBM(systemData=system, alpha=2, lr=0.1, opt='sgd', numsamples=10000, use_sampler_init_trick=False, steps=200)
+        #run_FRBM(systemData=system, alpha=1, lr=0.1, opt='sgd', numsamples=100000, use_sampler_init_trick=False, numsteps=2000) # use this for a single run
+        run_FRBM(systemData=system, alpha=alpha, lr=lr, opt=opt, numsamples=10000, use_sampler_init_trick=trick, numsteps=2000) # or this for argumetns from grid
     if args.machine == 'rnn':
-        run_FRNN(systemData=system, complex=True, num_units = 50, num_layers = 1, learningrate = 5e-3, lrschedule='C', numsamples = 10000, numsteps = 5000, seed = 123)
+        #run_FRNN(systemData=system, num_units = 50, num_layers = 1, learningrate = 5e-3, lrschedule='C', numsamples = 100000, numsteps = 1000)                     # use this for a single run
+        run_FRNN(systemData=system, num_units = num_units, num_layers = num_layers, learningrate = lr, lrschedule=lrschedule, numsamples = 100000, numsteps = 1000) # or this for argumetns from grid

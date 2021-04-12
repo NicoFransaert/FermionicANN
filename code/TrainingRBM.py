@@ -5,7 +5,7 @@ import numpy as np
 import json
 import time
 
-def run_RBM(systemData, alpha=2, lr=0.1, opt='sgd', numsamples=1000, use_sampler_init_trick=False, steps=200, seed=123):
+def run_RBM(systemData, alpha=2, lr=0.1, opt='sgd', numsamples=1000, use_sampler_init_trick=False, numsteps=200, seed=123):
 
     # make outfile
     path = './../data/RBM_runs/'
@@ -63,7 +63,7 @@ def run_RBM(systemData, alpha=2, lr=0.1, opt='sgd', numsamples=1000, use_sampler
 
     if opt == 'sgd':
         op = nk.optimizer.Sgd(learning_rate=lr)
-    elif opt == 'adam':
+    elif opt == 'adamax':
         op = nk.optimizer.Adam(alpha=lr)
     else:
         raise NotImplementedError('optimizer not implemented: ', opt)
@@ -79,7 +79,7 @@ def run_RBM(systemData, alpha=2, lr=0.1, opt='sgd', numsamples=1000, use_sampler
 
     print('the outfile is: ', outfile)
     start = time.time()
-    vmc.run(out=outfile, n_iter=steps)
+    vmc.run(out=outfile, n_iter=numsteps)
     end = time.time()
 
     print('### RBM calculation')
@@ -95,7 +95,7 @@ def run_RBM(systemData, alpha=2, lr=0.1, opt='sgd', numsamples=1000, use_sampler
                                         "Sigma": float(vmc.energy.error_of_mean)},
                     "Energy_variance": {"Mean": float(vmc.energy.variance)}, 
                     "Time_optimization": end-start, 
-                    "Steps": steps,
+                    "Steps": numsteps,
                     "Optimization_samples": numsamples,
                     "LocalSize": 2,
                     "Seed": seed,
