@@ -95,7 +95,7 @@ def run_RBM(systemData, alpha=2, lr=0.1, opt='sgd', numsamples=1000, use_sampler
     
     #eval run
     op_eval = nk.optimizer.Sgd(learning_rate=1e-10)
-    vmc = nk.variational.Vmc(hamiltonian=ha, sampler=sa, optimizer=op, n_samples=int(1e6))
+    vmc = nk.variational.Vmc(hamiltonian=ha, sampler=sa, optimizer=op, n_samples=int(1e5))
     vmc.run(n_iter=1)
     
     print('The final system energy is:', systemData['nuc_rep_energy'] + float(vmc.energy.mean.real))
