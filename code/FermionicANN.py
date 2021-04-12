@@ -75,4 +75,4 @@ if __name__ == '__main__':
         run_FRBM(systemData=system, alpha=alpha, lr=lr, opt=opt, numsamples=10000, use_sampler_init_trick=trick, numsteps=2000) # or this for argumetns from grid
     if args.machine == 'rnn':
         #run_FRNN(systemData=system, num_units = 50, num_layers = 1, learningrate = 5e-3, lrschedule='C', numsamples = 100000, numsteps = 1000)                     # use this for a single run
-        run_FRNN(systemData=system, num_units = num_units, num_layers = num_layers, learningrate = lr, lrschedule=lrschedule, numsamples = 100000, numsteps = 1000) # or this for argumetns from grid
+        run_FRNN(systemData=system, complex=False, num_units = num_units, num_layers = num_layers, learningrate = lr, lrschedule=lrschedule, numsamples = 100000, numsteps = 1000) # or this for argumetns from grid
