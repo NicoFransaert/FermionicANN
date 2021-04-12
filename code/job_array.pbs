@@ -3,5 +3,6 @@
 #PBS -l mem=8gb
 #PBS -l walltime=3:00:00
 cd $PBS_O_WORKDIR
+conda activate scqs
 
 python FermionicANN.py -machine rbm -index ${PBS_ARRAYID}
