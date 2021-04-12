@@ -32,7 +32,8 @@ def run_RNN(systemData, num_units = 50, num_layers = 2, learningrate = 2.5e-4, l
 	# make outfile
 	path = './../data/RNN_runs/'
 	if save_dir: 
-		os.mkdir(path+save_dir)
+		try: os.mkdir(path+save_dir)
+		except: pass
 		path += save_dir + '/'
 	filename = 'rnn_'
 	filename += systemData['basis'] + '_'

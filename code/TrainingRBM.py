@@ -11,7 +11,8 @@ def run_RBM(systemData, alpha=2, lr=0.1, opt='sgd', numsamples=1000, use_sampler
     # make outfile
     path = './../data/RBM_runs/'
     if save_dir: 
-        os.mkdir(path+save_dir)
+        try: os.mkdir(path+save_dir)
+        except: pass
         path += save_dir + '/'
     filename = 'rbm_'
     filename += systemData['basis'] + '_'
