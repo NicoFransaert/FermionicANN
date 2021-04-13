@@ -175,7 +175,7 @@ class RNNwavefunction():
 
             #Applying softmax layer
             output_ampl = self.dense_ampl(rnn_output)
-            output_phase = self.dense_phase(rnn_output)
+            # output_phase = self.dense_phase(rnn_output)
 
             output_mask = np.zeros((self.numsamples, self.inputdim))
             output_mask[:, 0] = self.N-self.n_electrons - (n-counter) > 0
@@ -185,17 +185,17 @@ class RNNwavefunction():
             # store amplitude and phase of marginal probability amplitude
             output_ampl = torch.nn.functional.normalize(output_ampl, eps = 1e-30)
             amplitudes[:, n,  0] = (output_ampl * one_hot_samples[:,n]).sum(dim = 1)
-            amplitudes[:, n,  1] = (output_phase * one_hot_samples[:,n]).sum(dim = 1)
+            # amplitudes[:, n,  1] = (output_phase * one_hot_samples[:,n]).sum(dim = 1)
 
-            inputs= one_hot_samples[:,n]
 
             counter += np.array(samples[:,n])
 
+            inputs = one_hot_samples[:,n]
             inputs_ampl = inputs
 
 
         tot_ampl[:, 0] = amplitudes[:,:,0].prod(dim = 1)
-        tot_ampl[:, 1] = amplitudes[:,:,1].sum(dim = 1)
+        # tot_ampl[:, 1] = amplitudes[:,:,1].sum(dim = 1)
 
         self.amplitudes = tot_ampl
         return self.amplitudes
