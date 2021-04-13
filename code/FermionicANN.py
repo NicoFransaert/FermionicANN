@@ -78,7 +78,7 @@ if __name__ == '__main__':
             numsamples = [1000, 10000],
             numsteps = [5000],
         )
-        combos = [i for i in itertools.product(*list(grid.values()))] + [(50, 1, 5e-3, 'C', 100000, 5000)] + [(50, 1, 2.5e-4, 'C', 100000, 10000)]
+        combos = [i for i in itertools.product(*list(grid.values()))] + [(50, 1, 5e-3, 'C', 100000, 5000)] + [(50, 1, 2.5e-4, 'C', 100000, 10000)] + [(50, 1, 2.5e-4, 'O', 100000, 10000)]
         num_units, num_layers, lr, lrschedule, numsamples, numsteps = combos[args.index]
 
 
