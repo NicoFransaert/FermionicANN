@@ -8,3 +8,4 @@ notebooks/scratch
 code/job_array.pbs.o*
 code/job_array.pbs.e*
 
+code/scan.py

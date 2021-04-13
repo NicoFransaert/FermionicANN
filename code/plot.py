@@ -1,9 +1,9 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import json
-
-meta_file = '../data/RBM_runs/H2_for_plot/rbm_sto3g_H2_0-7348_eq1_a1_sgd_lr01_ns10000_trick.META'
-hist_file = '../data/RBM_runs/H2_for_plot/rbm_sto3g_H2_0-7348_eq1_a1_sgd_lr01_ns10000_trick.log'
+file_name = '../data/RBM_runs/sweep2_LiH/rbm_sto3g_LiH_1-5474_eq1_a1_sgd_lr1_ns1000_trick'
+meta_file = file_name + '.META'
+hist_file = file_name + '.log'
 
 with open(meta_file) as jf:
     meta = json.load(jf)
@@ -20,7 +20,7 @@ plt.plot(np.array(it), savgol_filter(en,51,3))
 plt.title(r'$H_2$ @ equilibrium')
 plt.xlabel('Iteration')
 plt.ylabel('Energy')
-plt.savefig('../data/plots/{}_E_hist_plot2.png'.format('H2eq'))
+plt.savefig('../data/plots/{}_E_hist_plot_x.png'.format('LiHeq'))
 plt.clf()
 
 #plot relative energy error
@@ -29,5 +29,5 @@ plt.title(r'$H_2$ @ equilibrium')
 plt.xlabel('Iteration')
 plt.ylabel(r'$\Delta E_0$')
 plt.yscale('log')
-plt.savefig('../data/plots/{}_dE_hist_plot2.png'.format('H2eq'))
+plt.savefig('../data/plots/{}_dE_hist_plot_x.png'.format('LiHeq'))
 plt.clf()
