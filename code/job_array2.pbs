@@ -5,4 +5,4 @@
 cd $PBS_O_WORKDIR
 conda activate scqs
 
-python FermionicANN.py -machine rbm -index ${PBS_ARRAYID}
+python FermionicANN.py -machine rnn -index ${PBS_ARRAYID}
