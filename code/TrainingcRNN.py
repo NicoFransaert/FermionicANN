@@ -141,7 +141,7 @@ def run_RNN(systemData, num_units = 50, num_layers = 2, learningrate = 2.5e-4, l
 			for n in range(len(slices)):
 				s=slices[n]
 				local_energies[n,0] = torch.dot(H[s].to(device), (torch.mul(amplitudes[s][:,0]/amplitudes[s][0,0],torch.cos(amplitudes[s][:,1]-amplitudes[s][0,1])))) #real part
-				local_energies[n,1] = torch.dot(H[s].to(device), (torch.mul(amplitudes[s][:,0]/amplitudes[s][0,0],torch.sin(amplitudes[s][:,1]-amplitudes[s][0,1])))) #complex part			
+				# local_energies[n,1] = torch.dot(H[s].to(device), (torch.mul(amplitudes[s][:,0]/amplitudes[s][0,0],torch.sin(amplitudes[s][:,1]-amplitudes[s][0,1])))) #complex part			
 			# end_time_localE = time.time()
 			# print('local energy calculation took: ', end_time_localE-start_time_localE)
 
@@ -158,15 +158,19 @@ def run_RNN(systemData, num_units = 50, num_layers = 2, learningrate = 2.5e-4, l
 		# ORIGINAL IMPLEMENTATION (bad results)
 		# cost = 2 *  torch.mean(torch.log(amplitudes_[:,0]) * local_energies[:,0] + amplitudes_[:,1] * local_energies[:,1])
 		# cost = cost - 2* torch.mean(torch.log(amplitudes_[:,0]))*torch.mean(local_energies[:,0]) - 2*torch.mean(amplitudes_[:,1])*torch.mean(local_energies[:,1])
+
+		# DO NOT ADJUST FOR LOWER VARIANCE (C4 of Hibat)
+		# cost = 2 *  torch.mean(torch.log(amplitudes_[:,0])*local_energies[:,0] + amplitudes_[:,1]*local_energies[:,1])
+		# cost = cost - 2* torch.mean(torch.log(amplitudes_[:,0]))*torch.mean(local_energies[:,0]) - 2*torch.mean(amplitudes_[:,1])*torch.mean(local_energies[:,1])
 		
 		# CHANGE OF SIGNS OF COMPLEX PART (good results)
-		cost = 2 *  torch.mean(torch.log(amplitudes_[:,0]) * local_energies[:,0] - amplitudes_[:,1] * local_energies[:,1])
-		cost = cost - 2* torch.mean(torch.log(amplitudes_[:,0]))*torch.mean(local_energies[:,0]) + 2*torch.mean(amplitudes_[:,1])*torch.mean(local_energies[:,1])
+		# cost = 2 *  torch.mean(torch.log(amplitudes_[:,0]) * local_energies[:,0] - amplitudes_[:,1] * local_energies[:,1])
+		# cost = cost - 2* torch.mean(torch.log(amplitudes_[:,0]))*torch.mean(local_energies[:,0]) + 2*torch.mean(amplitudes_[:,1])*torch.mean(local_energies[:,1])
 		
 		# COMPLEX PART GONE (good results)
-		# cost = 2 *  torch.mean(torch.log(amplitudes_[:,0]) * local_energies[:,0])
-		# cost = cost - 2* torch.mean(torch.log(amplitudes_[:,0]))*torch.mean(local_energies[:,0])
-		
+		cost = 2 *  torch.mean(torch.log(amplitudes_[:,0]) * local_energies[:,0])
+		cost = cost - 2* torch.mean(torch.log(amplitudes_[:,0]))*torch.mean(local_energies[:,0])
+
 		# end_time_cost = time.time()
 		# print('calculating cost took: ', end_time_cost-start_time_cost)
 
