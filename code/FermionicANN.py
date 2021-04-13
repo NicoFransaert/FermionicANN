@@ -63,10 +63,11 @@ if __name__ == '__main__':
         combos = [i for i in itertools.product(*list(grid.values()))] + [(50, 1, 5e-3, 'O', 100000)]
         num_units, num_layers, lr, lrschedule, numsamples = combos[args.index]
 
-    save_dir='H2_for_plot'
+    system = sto3g_LiH_eq
+    save_dir='LiH_for_plot'
 
     if args.machine == 'rbm':
-        run_FRBM(systemData=system, alpha=1, lr=0.01, opt='sgd', numsamples=10000, use_sampler_init_trick=True, numsteps=6000, save_dir=save_dir) # use this for a single run
+        run_FRBM(systemData=system, alpha=1, lr=0.1, opt='sgd', numsamples=10000, use_sampler_init_trick=True, numsteps=2000, save_dir=save_dir) # use this for a single run
         #run_FRBM(systemData=system, alpha=alpha, lr=lr, opt=opt, numsamples=numsamples, use_sampler_init_trick=True, numsteps=4000, save_dir=save_dir) # or this for argumetns from grid
     if args.machine == 'rnn':
         #run_FRNN(systemData=system, num_units = 50, num_layers = 1, learningrate = 5e-3, lrschedule='C', numsamples = 100000, numsteps = 1000, save_dir=save_dir)                          # use this for a single run
