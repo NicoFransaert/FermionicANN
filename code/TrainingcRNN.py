@@ -154,10 +154,19 @@ def run_RNN(systemData, num_units = 50, num_layers = 2, learningrate = 2.5e-4, l
 		# print('calculating amplitudes took: ', end_time_amplitudes - start_time_amplitudes)
 
 		# start_time_cost = time.time()
-		cost = 2 *  torch.mean(torch.log(amplitudes_[:,0]) * local_energies[:,0] + amplitudes_[:,1] * local_energies[:,1])
-		cost = cost - 2* torch.mean(torch.log(amplitudes_[:,0]))*torch.mean(local_energies[:,0]) - 2*torch.mean(amplitudes_[:,1])*torch.mean(local_energies[:,1])
+
+		# ORIGINAL IMPLEMENTATION (bad results)
+		# cost = 2 *  torch.mean(torch.log(amplitudes_[:,0]) * local_energies[:,0] + amplitudes_[:,1] * local_energies[:,1])
+		# cost = cost - 2* torch.mean(torch.log(amplitudes_[:,0]))*torch.mean(local_energies[:,0]) - 2*torch.mean(amplitudes_[:,1])*torch.mean(local_energies[:,1])
+		
+		# CHANGE OF SIGNS OF COMPLEX PART (good results)
+		cost = 2 *  torch.mean(torch.log(amplitudes_[:,0]) * local_energies[:,0] - amplitudes_[:,1] * local_energies[:,1])
+		cost = cost - 2* torch.mean(torch.log(amplitudes_[:,0]))*torch.mean(local_energies[:,0]) + 2*torch.mean(amplitudes_[:,1])*torch.mean(local_energies[:,1])
+		
+		# COMPLEX PART GONE (good results)
 		# cost = 2 *  torch.mean(torch.log(amplitudes_[:,0]) * local_energies[:,0])
 		# cost = cost - 2* torch.mean(torch.log(amplitudes_[:,0]))*torch.mean(local_energies[:,0])
+		
 		# end_time_cost = time.time()
 		# print('calculating cost took: ', end_time_cost-start_time_cost)
 
