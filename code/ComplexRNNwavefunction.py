@@ -125,15 +125,16 @@ class RNNwavefunction():
             output_ampl = torch.nn.functional.normalize(output_ampl, eps = 1e-30)
             sample_temp = torch.multinomial(output_ampl**2, 1)[:,0]
 
+
             #store new samples
             samples[:,n] = sample_temp
             counter += np.array(sample_temp)
-
             #make the sampled degrees of freedom inputs for the next iteration
             inputs = torch.nn.functional.one_hot(sample_temp, num_classes = self.outputdim).float()
             inputs_ampl = inputs
 
         self.samples = samples
+        # print([list(samples[i]).count(1) for i in range(len(samples))])
         return self.samples
 
 
@@ -156,7 +157,7 @@ class RNNwavefunction():
 
         zero_row = torch.zeros(self.numsamples,1, device = device)
         one_row = torch.ones(self.numsamples,1, device = device)
-        inputs = torch.cat((zero_row, one_row), dim=1)
+        inputs = torch.cat((one_row, zero_row), dim=1)
 
         rnn_state = torch.zeros(self.num_layers, self.numsamples, self.hidden_size, dtype = torch.float32, device = device)
         amplitudes = torch.zeros(self.numsamples, self.N, 2, device = device)  #2 dims for amplitude and phase
@@ -175,7 +176,7 @@ class RNNwavefunction():
 
             #Applying softmax layer
             output_ampl = self.dense_ampl(rnn_output)
-            # output_phase = self.dense_phase(rnn_output)
+            output_phase = self.dense_phase(rnn_output)
 
             output_mask = np.zeros((self.numsamples, self.inputdim))
             output_mask[:, 0] = self.N-self.n_electrons - (n-counter) > 0
@@ -185,7 +186,7 @@ class RNNwavefunction():
             # store amplitude and phase of marginal probability amplitude
             output_ampl = torch.nn.functional.normalize(output_ampl, eps = 1e-30)
             amplitudes[:, n,  0] = (output_ampl * one_hot_samples[:,n]).sum(dim = 1)
-            # amplitudes[:, n,  1] = (output_phase * one_hot_samples[:,n]).sum(dim = 1)
+            amplitudes[:, n,  1] = (output_phase * one_hot_samples[:,n]).sum(dim = 1)
 
 
             counter += np.array(samples[:,n])
@@ -194,8 +195,9 @@ class RNNwavefunction():
             inputs_ampl = inputs
 
 
+        tot_ampl = torch.zeros(self.numsamples, 2, device=device, dtype=torch.float32)
         tot_ampl[:, 0] = amplitudes[:,:,0].prod(dim = 1)
-        # tot_ampl[:, 1] = amplitudes[:,:,1].sum(dim = 1)
+        tot_ampl[:, 1] = amplitudes[:,:,1].sum(dim = 1)
 
         self.amplitudes = tot_ampl
         return self.amplitudes

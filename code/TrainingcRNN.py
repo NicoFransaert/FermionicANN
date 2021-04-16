@@ -62,6 +62,7 @@ def run_RNN(systemData, num_units = 50, num_layers = 2, learningrate = 2.5e-4, l
 
 
 	# make RNN
+	# wf = torch.load(outfile+'.pt')
 	wf = RNNwavefunction(N, inputdim=2, n_electrons=n_electrons, hidden_size=num_units, num_layers=num_layers, seed=seed)
 	numparam = sum(p.numel() for p in wf.rnn.parameters() if p.requires_grad)
 	numparam += sum(p.numel() for p in wf.dense_ampl.parameters() if p.requires_grad)
@@ -80,7 +81,8 @@ def run_RNN(systemData, num_units = 50, num_layers = 2, learningrate = 2.5e-4, l
 		NotImplementedError('Learning rate schedule not implemented')
 
 	# optimizer
-	optimizer = torch.optim.Adam(params, lr=learningrate)
+	optimizer = torch.optim.SGD(params, lr=learningrate)
+	# optimizer = torch.optim.Adam(params, lr=learningrate)
 	scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=adjust_lr)
 
 
@@ -141,7 +143,7 @@ def run_RNN(systemData, num_units = 50, num_layers = 2, learningrate = 2.5e-4, l
 			for n in range(len(slices)):
 				s=slices[n]
 				local_energies[n,0] = torch.dot(H[s].to(device), (torch.mul(amplitudes[s][:,0]/amplitudes[s][0,0],torch.cos(amplitudes[s][:,1]-amplitudes[s][0,1])))) #real part
-				# local_energies[n,1] = torch.dot(H[s].to(device), (torch.mul(amplitudes[s][:,0]/amplitudes[s][0,0],torch.sin(amplitudes[s][:,1]-amplitudes[s][0,1])))) #complex part			
+				local_energies[n,1] = torch.dot(H[s].to(device), (torch.mul(amplitudes[s][:,0]/amplitudes[s][0,0],torch.sin(amplitudes[s][:,1]-amplitudes[s][0,1])))) #complex part			
 			# end_time_localE = time.time()
 			# print('local energy calculation took: ', end_time_localE-start_time_localE)
 
@@ -156,8 +158,8 @@ def run_RNN(systemData, num_units = 50, num_layers = 2, learningrate = 2.5e-4, l
 		# start_time_cost = time.time()
 
 		# ORIGINAL IMPLEMENTATION (bad results)
-		# cost = 2 *  torch.mean(torch.log(amplitudes_[:,0]) * local_energies[:,0] + amplitudes_[:,1] * local_energies[:,1])
-		# cost = cost - 2* torch.mean(torch.log(amplitudes_[:,0]))*torch.mean(local_energies[:,0]) - 2*torch.mean(amplitudes_[:,1])*torch.mean(local_energies[:,1])
+		cost = 2 *  torch.mean(torch.log(amplitudes_[:,0]) * local_energies[:,0] + amplitudes_[:,1] * local_energies[:,1])
+		cost = cost - 2* torch.mean(torch.log(amplitudes_[:,0]))*torch.mean(local_energies[:,0]) - 2*torch.mean(amplitudes_[:,1])*torch.mean(local_energies[:,1])
 
 		# DO NOT ADJUST FOR LOWER VARIANCE (C4 of Hibat)
 		# cost = 2 *  torch.mean(torch.log(amplitudes_[:,0])*local_energies[:,0] + amplitudes_[:,1]*local_energies[:,1])
@@ -168,8 +170,8 @@ def run_RNN(systemData, num_units = 50, num_layers = 2, learningrate = 2.5e-4, l
 		# cost = cost - 2* torch.mean(torch.log(amplitudes_[:,0]))*torch.mean(local_energies[:,0]) + 2*torch.mean(amplitudes_[:,1])*torch.mean(local_energies[:,1])
 		
 		# COMPLEX PART GONE (good results)
-		cost = 2 *  torch.mean(torch.log(amplitudes_[:,0]) * local_energies[:,0])
-		cost = cost - 2* torch.mean(torch.log(amplitudes_[:,0]))*torch.mean(local_energies[:,0])
+		# cost = 2 *  torch.mean(torch.log(amplitudes_[:,0]) * local_energies[:,0])
+		# cost = cost - 2* torch.mean(torch.log(amplitudes_[:,0]))*torch.mean(local_energies[:,0])
 
 		# end_time_cost = time.time()
 		# print('calculating cost took: ', end_time_cost-start_time_cost)
@@ -345,6 +347,7 @@ def J1J2Slices(ham, sigmasp, sigmas, H, sigmaH, matrixelements, n_electrons):
 
 	for n in range(sigmasp.shape[0]):
 		sigmap = sigmasp[n,:]
+				
 		num = J1J2MatrixElements(ham ,sigmap, sigmaH, matrixelements, n_electrons) #note that sigmas[0,:]==sigmap, matrixelements and sigmaH are updated
 		slices.append(slice(sigmas_length,sigmas_length + num))
 		s = slices[n]
