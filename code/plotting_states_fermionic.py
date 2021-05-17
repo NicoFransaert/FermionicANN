@@ -88,6 +88,7 @@ def plot_importance():
     # Normalize by greatest value
     amplitudes_ED = amplitudes_ED/np.max(amplitudes_ED)
     # Get sorted indices from greatest to lowest 1 -> 1e-2 -> ... -> 1e-12 // INDICES!!
+    # sorted_indices_ED = [7, 502, 83, ... ]
     sorted_indices_ED = np.flip(np.argsort(amplitudes_ED))
     
     # Get the states in an ordered fashion
